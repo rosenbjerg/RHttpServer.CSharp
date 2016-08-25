@@ -16,7 +16,7 @@ namespace WebServerHoster
 
             _server.Get("/", (req, res) =>
             {
-                res.SendString("Hello world");
+                res.SendFile("index.html");
             });
 
             _server.Get("/test", (req, res) =>

@@ -114,7 +114,7 @@ namespace WebServerHoster
         private void Listen()
         {
             _listener = new HttpListener();
-            _listener.Prefixes.Add("http://localhost:" + Port + "/");
+            _listener.Prefixes.Add("http://*:" + Port + "/");
             _listener.Start();
             while (true)
             {
@@ -164,7 +164,7 @@ namespace WebServerHoster
             }
             else
             {
-                var publicFile = Path.Combine(PublicDir, route);
+                var publicFile = Path.Combine(PublicDir, route.TrimStart('/'));
                 if (File.Exists(publicFile))
                 {
                     Task.Run(() => new SimpleResponse(context.Response).SendFile(publicFile));
