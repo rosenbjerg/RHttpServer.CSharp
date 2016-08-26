@@ -197,9 +197,9 @@ namespace WebServerHoster
 
         private static RequestParams GetParams(SimpleHttpAction act, string route)
         {
-            var dict = new Dictionary<string, string>();
             var rTree = route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             var rLen = rTree.Length;
+            var dict = new Dictionary<string, string>();
             foreach (var keyValuePair in act.Params)
             {
                 if (keyValuePair.Key < rLen) dict.Add(keyValuePair.Value, rTree[keyValuePair.Key]);
@@ -211,16 +211,22 @@ namespace WebServerHoster
         {
             var rTree = route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             var rSteps = rTree.Length;
-            IEnumerable<SimpleHttpAction> list = actions.Where(t => t.RouteLength == rSteps);
-            int routeStep = 0;
-            do
+            IList<IList<SimpleHttpAction>> lister = new List<IList<SimpleHttpAction>>();
+            int routeStep;
+            lister.Add(actions.Where(t => t.RouteLength <= rSteps).ToList());
+            if (!lister[0].Any()) return null;
+            for (routeStep = 1; routeStep < rSteps; routeStep++)
             {
-                var l = list.Where(s => s.HasRouteStep(rTree[routeStep], routeStep)).ToList();
-                if (!l.Any()) l = list.Where(s => s.HasRouteStep("^", routeStep)).ToList();
-                if (!l.Any()) l = list.Where(s => s.HasRouteStep("*", routeStep)).ToList();
-                list = l;
-                routeStep++;
-            } while (routeStep < rSteps && list.Count() > 1);
+                lister.Add(lister[routeStep-1].Where(s => s.HasRouteStep(routeStep, rTree[routeStep], "^", "*")).ToList());
+            }
+            routeStep = routeStep - 1;
+            IEnumerable<SimpleHttpAction> list = lister[routeStep];
+            while (!list.Any() && routeStep > 0)
+            {
+                routeStep = routeStep - 1;
+                var step = routeStep;
+                list = lister[routeStep].Where(s => s.HasRouteStep(step, "*"));
+            }
             return list.FirstOrDefault();
         }
 

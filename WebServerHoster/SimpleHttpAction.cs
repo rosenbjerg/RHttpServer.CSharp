@@ -27,10 +27,16 @@ namespace WebServerHoster
 
         public readonly string[] RouteTree;
 
-        public bool HasRouteStep(string route, int step)
+        public bool HasRouteStep(int step, params string[] route)
         {
-            if (step > RouteTree.Length - 1) return false;
-            return RouteTree[step] == route;
+            if (step > RouteLength - 1) return false;
+            if (step == -1) step = RouteLength -1;
+            var rs = RouteTree[step];
+            foreach (var s in route)
+            {
+                if (s == rs) return true;
+            }
+            return false;
         }
     }
 }

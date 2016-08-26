@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace WebServerHoster
 {
@@ -87,6 +88,10 @@ namespace WebServerHoster
             UnderlyingResponse = res;
         }
 
+        /// <summary>
+        /// The underlying HttpListenerResponse
+        /// This implementation of SimpleResponse is leaky, to avoid limiting you
+        /// </summary>
         public HttpListenerResponse UnderlyingResponse { get; }
 
         /// <summary>
@@ -108,6 +113,35 @@ namespace WebServerHoster
             catch (Exception)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+            }
+            finally
+            {
+                UnderlyingResponse.OutputStream.Close();
+                _closed = true;
+            }
+        }
+
+
+        /// <summary>
+        /// Sends object serialized to text using Newtonsoft.Json generic serializer
+        /// </summary>
+        /// <param name="data">The object to be serialized and send</param>
+        public void SendJson(object data)
+        {
+            if (_closed) throw new SimpleHttpServerException("You can only send the response once");
+            try
+            {
+                var json = JsonConvert.SerializeObject(data);
+                var bytes = Encoding.UTF8.GetBytes(json);
+                UnderlyingResponse.ContentType = "application/json";
+                UnderlyingResponse.ContentLength64 = bytes.Length;
+                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
+                UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.OK;
+            }
+            catch (Exception)
+            {
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
             }
             finally
             {
@@ -155,27 +189,26 @@ namespace WebServerHoster
 
         /// <summary>
         /// "Renders" an .ecs file, which is an html file extension, used for dynamic content. 
-        /// All tags in parameters will be replaced in the page
+        /// All ecs tags on the page will be replaced with the value of the corresponding tag in parameters collection
         /// </summary>
         /// <param name="pagesIndesEcs">The path of the .ecs file</param>
-        /// <param name="parameters">The parameter object used when replacing data</param>
+        /// <param name="parameters">The parameter collection used when replacing data</param>
         public void RenderPage(string pagesIndesEcs, RenderParams parameters)
         {
             if (_closed) throw new SimpleHttpServerException("You can only send the response once");
+            if (!pagesIndesEcs.ToLowerInvariant().EndsWith(".ecs")) throw new SimpleHttpServerException("Please use .ecs files when rendering pages");
             try
             {
-                var pageData = File.ReadAllText(pagesIndesEcs, Encoding.UTF8);
-                var sb = new StringBuilder(pageData);
+                var sb = new StringBuilder(File.ReadAllText(pagesIndesEcs, Encoding.UTF8));
                 foreach (var parPair in parameters)
                 {
                     sb.Replace(parPair.Key, parPair.Value);
                 }
-                pageData = sb.ToString();
                 UnderlyingResponse.ContentType = "text/html";
-                UnderlyingResponse.ContentLength64 = pageData.Length;
+                UnderlyingResponse.ContentLength64 = sb.Length;
                 UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
                 UnderlyingResponse.AddHeader("Last-Modified", DateTime.Now.ToString("r"));
-                var pageBytes = Encoding.UTF8.GetBytes(pageData);
+                var pageBytes = Encoding.UTF8.GetBytes(sb.ToString());
                 UnderlyingResponse.OutputStream.Write(pageBytes, 0, pageBytes.Length);
                 UnderlyingResponse.StatusCode = (int)HttpStatusCode.OK;
                 UnderlyingResponse.OutputStream.Flush();

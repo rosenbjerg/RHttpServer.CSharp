@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 namespace WebServerHoster
 {
+    /// <summary>
+    /// Object containing parameters for a request
+    /// </summary>
     public class RequestParams
     {
         private readonly Dictionary<string, string> _dict;
@@ -10,7 +13,11 @@ namespace WebServerHoster
         {
             _dict = dict;
         }
-        
+        /// <summary>
+        /// Get the request data fora given parameter
+        /// </summary>
+        /// <param name="paramId"></param>
+        /// <returns></returns>
         public string this[string paramId]
         {
             get

@@ -13,11 +13,6 @@ namespace WebServerHoster
 
             var server = new SimpleHttpServer("./public", port);
 
-            server.Get("/", (req, res) =>
-            {
-                res.SendFile("./public/index.html");
-            });
-
             server.Get("/*", (req, res) =>
             {
                 res.SendString("404 - Nothing found man");
@@ -29,11 +24,25 @@ namespace WebServerHoster
             //    res.SendString("You wrote: " + test);
             //});
 
-            server.Get("/test", (req, res) =>
+            server.Get("/1", (req, res) =>
             {
-                res.SendString("test");
+                res.SendString("1");
             });
 
+            server.Get("/1/*", (req, res) =>
+            {
+                res.SendString("1*");
+            });
+
+            server.Get("/1/2/:test/:test2", (req, res) =>
+            {
+                var pars = new RenderParams
+                    {
+                        { "data1", req.Params["test"] },
+                        { "data2", "{\"test\":" + req.Params["test2"] + "}" }
+                    };
+                res.RenderPage("./public/index.ecs", pars);
+            });
             //server.Get("/test2", (req, res) =>
             //{
             //    var pars = new RenderParams
