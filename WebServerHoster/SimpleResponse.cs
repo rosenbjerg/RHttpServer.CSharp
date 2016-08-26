@@ -1,15 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 
 namespace WebServerHoster
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class SimpleResponse
     {
-
-        private static IDictionary<string, string> _mimeTypeMappings = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
+        protected static readonly IDictionary<string, string> MimeTypes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
             #region extension to MIME type list
             {".asf", "video/x-ms-asf"},
             {".asx", "video/x-ms-asf"},
@@ -78,7 +81,7 @@ namespace WebServerHoster
             #endregion
         };
 
-        private bool _closed = false;
+        protected bool _closed = false;
         public SimpleResponse(HttpListenerResponse res)
         {
             UnderlyingResponse = res;
@@ -86,6 +89,10 @@ namespace WebServerHoster
 
         public HttpListenerResponse UnderlyingResponse { get; }
 
+        /// <summary>
+        /// Sends data as text
+        /// </summary>
+        /// <param name="data">The text data to send</param>
         public void SendString(string data)
         {
             if (_closed) throw new SimpleHttpServerException("You can only send the response once");
@@ -109,15 +116,19 @@ namespace WebServerHoster
             }
         }
 
-        public void SendFile(string filepath)
+        /// <summary>
+        /// Sends file as response
+        /// </summary>
+        /// <param name="filepath">The local path of the file to send</param>
+        /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
+        public void SendFile(string filepath, string mime = null)
         {
             if (_closed) throw new SimpleHttpServerException("You can only send the response once");
             try
             {
                 Stream input = new FileStream(filepath, FileMode.Open);
                 //Adding permanent http response headers
-                string mime;
-                UnderlyingResponse.ContentType = _mimeTypeMappings.TryGetValue(Path.GetExtension(filepath), out mime) ? mime : "application/octet-stream";
+                if (mime == null) UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime) ? mime : "application/octet-stream";
                 UnderlyingResponse.ContentLength64 = input.Length;
                 UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
                 UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
@@ -128,6 +139,44 @@ namespace WebServerHoster
                     UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
                 input.Close();
 
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.OK;
+                UnderlyingResponse.OutputStream.Flush();
+            }
+            catch (Exception)
+            {
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+            }
+            finally
+            {
+                UnderlyingResponse.OutputStream.Close();
+                _closed = true;
+            }
+        }
+
+        /// <summary>
+        /// "Renders" an .ecs file, which is an html file extension, used for dynamic content. 
+        /// All tags in parameters will be replaced in the page
+        /// </summary>
+        /// <param name="pagesIndesEcs">The path of the .ecs file</param>
+        /// <param name="parameters">The parameter object used when replacing data</param>
+        public void RenderPage(string pagesIndesEcs, RenderParams parameters)
+        {
+            if (_closed) throw new SimpleHttpServerException("You can only send the response once");
+            try
+            {
+                var pageData = File.ReadAllText(pagesIndesEcs, Encoding.UTF8);
+                var sb = new StringBuilder(pageData);
+                foreach (var parPair in parameters)
+                {
+                    sb.Replace(parPair.Key, parPair.Value);
+                }
+                pageData = sb.ToString();
+                UnderlyingResponse.ContentType = "text/html";
+                UnderlyingResponse.ContentLength64 = pageData.Length;
+                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
+                UnderlyingResponse.AddHeader("Last-Modified", DateTime.Now.ToString("r"));
+                var pageBytes = Encoding.UTF8.GetBytes(pageData);
+                UnderlyingResponse.OutputStream.Write(pageBytes, 0, pageBytes.Length);
                 UnderlyingResponse.StatusCode = (int)HttpStatusCode.OK;
                 UnderlyingResponse.OutputStream.Flush();
             }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 
@@ -6,27 +7,47 @@ namespace WebServerHoster
 {
     class Program
     {
-        private static SimpleHttpServer _server;
-
         static void Main(string[] args)
         {
             var port = 3000;
 
-            _server = new SimpleHttpServer("./public", port);
+            var server = new SimpleHttpServer("./public", port);
 
-            _server.Get("/", (req, res) =>
+            server.Get("/", (req, res) =>
             {
-                res.SendFile("index.html");
+                res.SendFile("./public/index.html");
             });
 
-            _server.Get("/test", (req, res) =>
+            server.Get("/*", (req, res) =>
+            {
+                res.SendString("404 - Nothing found man");
+            });
+
+            //server.Get("/:testvar", (req, res) =>
+            //{
+            //    var test = req.Params["testvar"];
+            //    res.SendString("You wrote: " + test);
+            //});
+
+            server.Get("/test", (req, res) =>
             {
                 res.SendString("test");
             });
 
-            Console.WriteLine("Server is running on this port: " + _server.Port + "\nPress any key to close");
+            //server.Get("/test2", (req, res) =>
+            //{
+            //    var pars = new RenderParams
+            //    {
+            //        { "data1", "data data data data ..." },
+            //        { "data2", "test test test test."}
+            //    };
+            //    res.RenderPage("./public/index.ecs", pars);
+            //});
+
+            server.Start();
+            Console.WriteLine("\nPress any key to close");
             Console.ReadKey();
-            _server.Stop();
+            server.Stop();
         }
     }
 }
