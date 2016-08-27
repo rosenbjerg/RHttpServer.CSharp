@@ -2,7 +2,7 @@
 
 namespace RHttpServer
 {
-    public class SimpleHttpServerException : Exception
+    internal class SimpleHttpServerException : Exception
     {
         public SimpleHttpServerException(string msg) : base(msg)
         {

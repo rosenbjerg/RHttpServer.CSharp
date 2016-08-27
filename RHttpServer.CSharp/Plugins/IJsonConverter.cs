@@ -1,8 +1,11 @@
 namespace RHttpServer.Plugins
 {
+    /// <summary>
+    /// Interface for plugins that is used for Json serialization and deserialization
+    /// </summary>
     public interface IJsonConverter
     {
-        string Serialize(object obj);
-        object Deserialize(string jsonData);
+        string Serialize<T>(T obj);
+        T Deserialize<T>(string jsonData);
     }
 }

@@ -7,7 +7,7 @@ namespace RHttpServer
     /// </summary>
     public class SimpleRequest
     {
-        public SimpleRequest(HttpListenerRequest req, RequestParams par)
+        internal SimpleRequest(HttpListenerRequest req, RequestParams par)
         {
             UnderlyingRequest = req;
             Params = par;

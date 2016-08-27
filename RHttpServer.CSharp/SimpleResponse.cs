@@ -85,7 +85,7 @@ namespace RHttpServer
 
         protected bool Closed = false;
 
-        public SimpleResponse(HttpListenerResponse res, SimplePlugins simplePlugins)
+        internal SimpleResponse(HttpListenerResponse res, SimplePlugins simplePlugins)
         {
             UnderlyingResponse = res;
             Plugins = simplePlugins;

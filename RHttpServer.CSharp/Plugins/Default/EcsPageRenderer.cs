@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Plugins
+namespace RHttpServer.Plugins.Default
 {
-    public class EcsPageRenderer : SimplePlugin, IPageRenderer
+    internal sealed class EcsPageRenderer : SimplePlugin, IPageRenderer
     {
         public string Render(string filepath, RenderParams parameters)
         {

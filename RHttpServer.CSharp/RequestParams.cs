@@ -9,7 +9,7 @@ namespace RHttpServer
     {
         private readonly Dictionary<string, string> _dict;
 
-        public RequestParams(Dictionary<string, string> dict)
+        internal RequestParams(Dictionary<string, string> dict)
         {
             _dict = dict;
         }

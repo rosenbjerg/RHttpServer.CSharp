@@ -1,6 +1,7 @@
 ﻿using System;
 using RHttpServer;
 using RHttpServer.Plugins;
+using RHttpServer.Plugins.Default;
 
 namespace WebServerHoster
 {
@@ -10,7 +11,7 @@ namespace WebServerHoster
         {
             var port = 3000;
 
-            var server = new SimpleHttpServer("./public", port, 3);
+            var server = new SimpleHttpServer("./public", port, 4);
 
 
             server.Get("/", (req, res) =>
@@ -50,9 +51,7 @@ namespace WebServerHoster
                 res.Redirect("/404");
             });
 
-            server.SetSecuritySettings(false);
-
-            server.AddPlugin<IJsonConverter, SimpleNewtonsoftJsonConverter>(new SimpleNewtonsoftJsonConverter());
+            server.InitializeDefaultPlugins(true, new SimpleHttpSecuritySettings(2, 20000));
 
             server.Start(true);
             Console.WriteLine("\nPress any key to close");

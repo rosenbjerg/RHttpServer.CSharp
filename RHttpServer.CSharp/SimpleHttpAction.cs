@@ -5,7 +5,7 @@ namespace RHttpServer
 {
     public class SimpleHttpAction
     {
-        public SimpleHttpAction(string route, Action<SimpleRequest, SimpleResponse> action)
+        internal SimpleHttpAction(string route, Action<SimpleRequest, SimpleResponse> action)
         {
             RouteTree = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
             RouteLength = RouteTree.Length;

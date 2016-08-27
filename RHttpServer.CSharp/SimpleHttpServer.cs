@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using RHttpServer.Plugins;
-using RHttpServer.Security;
+using RHttpServer.Plugins.Default;
 
 namespace RHttpServer
 {
@@ -30,6 +30,8 @@ namespace RHttpServer
         private readonly ConcurrentQueue<HttpListenerContext> _queue;
         private readonly SimplePlugins _simplePlugins = new SimplePlugins();
         private IHttpSecurityHandler _securityHandler;
+        private bool _defPluginsReady;
+        private bool _securityOn;
 
         /// <summary>
         /// The publicly available folder
@@ -45,14 +47,44 @@ namespace RHttpServer
         /// Whether the security is turned on.
         /// Set using SetSecuritySettings(..)
         /// </summary>
-        public bool SecurityOn { get; private set; }
-        
+        public bool SecurityOn
+        {
+            get { return _securityOn; }
+            set
+            {
+                if (_securityOn == value) return;
+                _securityOn = value;
+                if (_securityOn)
+                {
+                    _simplePlugins.Use<IHttpSecurityHandler>().Start();
+                }
+                else
+                {
+                    _simplePlugins.Use<IHttpSecurityHandler>().Stop();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Register a plugin to be used in the server
+        /// </summary>
+        /// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
+        /// <typeparam name="TPlugin">The type of the plugin instance</typeparam>
+        /// <param name="plugin">The instance of the plugin that will be registered</param>
         public void AddPlugin<TPluginInterface, TPlugin>(TPlugin plugin)
             where TPlugin : SimplePlugin, TPluginInterface
         {
             plugin.SetPlugins(_simplePlugins);
             _simplePlugins.Add(typeof(TPluginInterface), plugin);
         }
+
+        /// <summary>
+        /// Returns the registered instance of a plugin
+        /// </summary>
+        /// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
+        /// <param name="key">The interface the plugin instance is registered to and implements</param>
+        /// <returns>The instance of the registered plugin</returns>
+        public TPluginInterface GetPlugin<TPluginInterface>() => _simplePlugins.Use<TPluginInterface>();
 
         /// <summary>
         /// Add action to handle GET requests to a given route
@@ -81,24 +113,6 @@ namespace RHttpServer
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
         public void Delete(string route, Action<SimpleRequest, SimpleResponse> action) => AddToActionList(new SimpleHttpAction(route, action), _deleteActions);
-
-        public void SetSecuritySettings(bool enabled, IHttpSecuritySettings nonDefaultSecuritySettings = null, IHttpSecurityHandler nonDefaultSecurityHandler = null)
-        {
-            if (_securityHandler == null && nonDefaultSecurityHandler == null)
-            {
-                _securityHandler = new SimpleHttpSecurityHandler();
-            }
-            SecurityOn = enabled;
-            if (nonDefaultSecurityHandler != null)
-            {
-                _securityHandler = nonDefaultSecurityHandler;
-            }
-            if (nonDefaultSecuritySettings == null) nonDefaultSecuritySettings = new SimpleHttpSecuritySettings();
-            _securityHandler.Settings = nonDefaultSecuritySettings;
-            if (enabled) _securityHandler.Start();
-            else _securityHandler.Stop();
-        }
-
 
         /// <summary>
         /// Constructs and starts a server with given port and using the given path as public folder.
@@ -151,8 +165,7 @@ namespace RHttpServer
         /// </summary>
         public void Start(bool localOnly = false)
         {
-            if (!_simplePlugins.IsRegistered<IJsonConverter>()) AddPlugin<IJsonConverter, SimpleNewtonsoftJsonConverter>(new SimpleNewtonsoftJsonConverter());
-            if (!_simplePlugins.IsRegistered<IPageRenderer>()) AddPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
+            InitializeDefaultPlugins();
             _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "*")}:{Port}/");
             _listener.Start();
             _listenerThread.Start();
@@ -167,6 +180,21 @@ namespace RHttpServer
         }
         
         public void Dispose() { Stop(); }
+
+        /// <summary>
+        /// Initializes any default plugin if no other plugin is registered to same interface
+        /// </summary>
+        public void InitializeDefaultPlugins(bool securityOn = false, SimpleHttpSecuritySettings simpleHttpSecuritySettings = null)
+        {
+            if (_defPluginsReady) return;
+            if (!_simplePlugins.IsRegistered<IJsonConverter>()) AddPlugin<IJsonConverter, SimpleNewtonsoftJsonConverter>(new SimpleNewtonsoftJsonConverter());
+            if (!_simplePlugins.IsRegistered<IPageRenderer>()) AddPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
+            if (!_simplePlugins.IsRegistered<IHttpSecurityHandler>()) AddPlugin<IHttpSecurityHandler, SimpleHttpSecurityHandler>(new SimpleHttpSecurityHandler());
+            _defPluginsReady = true;
+            if (simpleHttpSecuritySettings == null) simpleHttpSecuritySettings = new SimpleHttpSecuritySettings();
+            _simplePlugins.Use<IHttpSecurityHandler>().Settings = simpleHttpSecuritySettings;
+            SecurityOn = securityOn;
+        }
 
         /// <summary>
         /// Stops the server thread and all worker threads.
@@ -208,10 +236,17 @@ namespace RHttpServer
 
         private void ContextReady(IAsyncResult ar)
         {
-            if (ar.IsCompleted)
+            try
             {
-                _queue.Enqueue(_listener.EndGetContext(ar));
-                _ready.Set();
+                if (ar.IsCompleted)
+                {
+                    _queue.Enqueue(_listener.EndGetContext(ar));
+                    _ready.Set();
+                }
+            }
+            catch (HttpListenerException e)
+            {
+                Console.WriteLine(e);
             }
         }
 
@@ -226,7 +261,7 @@ namespace RHttpServer
                     _ready.Reset();
                     continue;
                 }
-                if (!SecurityOn || _securityHandler.HandleRequest(context.Request)) Process(context);
+                if (!SecurityOn || _simplePlugins.Use<IHttpSecurityHandler>().HandleRequest(context.Request)) Process(context);
             }
         }
         
