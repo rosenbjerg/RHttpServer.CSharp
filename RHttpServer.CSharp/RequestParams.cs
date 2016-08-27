@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace WebServerHoster
+namespace RHttpServer
 {
     /// <summary>
     /// Object containing parameters for a request

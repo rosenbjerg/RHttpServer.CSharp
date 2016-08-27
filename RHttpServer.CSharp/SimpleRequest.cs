@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace WebServerHoster
+namespace RHttpServer
 {
     /// <summary>
     /// Class representing a request from a client
@@ -27,7 +27,7 @@ namespace WebServerHoster
         public string GetBody()
         {
             if (!UnderlyingRequest.HasEntityBody) return null;
-            using (System.IO.Stream body = UnderlyingRequest.InputStream) 
+            using (System.IO.Stream body = UnderlyingRequest.InputStream)
             {
                 using (System.IO.StreamReader reader = new System.IO.StreamReader(body, UnderlyingRequest.ContentEncoding))
                 {

@@ -1,14 +1,19 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using RHttpServer.Plugins;
 
-namespace WebServerHoster
+namespace RHttpServer
 {
     /// <summary>
-    /// Parameters used when rendering an .ecs page
+    /// Parameters used when rendering a page
     /// </summary>
-    public class RenderParams : IEnumerable<KeyValuePair<string, string>>
+    public sealed class RenderParams : IEnumerable<KeyValuePair<string, string>>
     {
+        internal RenderParams()
+        {
+            
+        }
         private readonly IDictionary<string, string> _dict = new Dictionary<string, string>();
 
         /// <summary>
@@ -18,7 +23,7 @@ namespace WebServerHoster
         /// <param name="parData">The replacement-data for the tag</param>
         public void Add(string parName, string parData)
         {
-            _dict.Add($"<%{parName.Trim(' ')}%>", parData);
+            _dict.Add(_renderer.Parametrize(parName, parData));
         }
 
         /// <summary>
@@ -28,7 +33,7 @@ namespace WebServerHoster
         /// <param name="parData">The replacement-data object for the tag</param>
         public void Add(string parName, object parData)
         {
-            _dict.Add($"<%{parName.Trim(' ')}%>", JsonConvert.SerializeObject(parData));
+            _dict.Add(_renderer.ParametrizeObject(parName, parData));
         }
 
         /// <summary>
@@ -60,5 +65,12 @@ namespace WebServerHoster
         {
             return GetEnumerator();
         }
+
+        internal void SetPlugins(IPageRenderer renderer)
+        {
+            _renderer = renderer;
+        }
+
+        private IPageRenderer _renderer;
     }
 }

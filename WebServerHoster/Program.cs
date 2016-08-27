@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
+using RHttpServer;
+using RHttpServer.Plugins;
 
 namespace WebServerHoster
 {
@@ -11,49 +10,51 @@ namespace WebServerHoster
         {
             var port = 3000;
 
-            var server = new SimpleHttpServer("./public", port);
+            var server = new SimpleHttpServer("./public", port, 3);
+
+
+            server.Get("/", (req, res) =>
+            {
+                res.SendString("Welcome");
+            });
+
+            server.Get("/file", (req, res) =>
+            {
+                res.SendFile("./public/index.html");
+            });
+
+            server.Get("/render", (req, res) =>
+            {
+                var pars = server.CreateRenderParams();
+                pars.Add("data1", "test1");
+                pars.Add("data2", "{\"Test\":\"test2\"}");
+                res.RenderPage("./public/index.ecs", pars);
+            });
+            
+            server.Get("/:test", (req, res) =>
+            {
+                var pars = server.CreateRenderParams();
+                pars.Add("data1", req.Params["test"]);
+                pars.Add("data2", 42);
+
+                res.RenderPage("./public/index.ecs", pars);
+            });
+
+            server.Get("/404", (req, res) =>
+            {
+                res.SendString("404 - Nothing found");
+            });
 
             server.Get("/*", (req, res) =>
             {
-                res.SendString("404 - Nothing found man");
+                res.Redirect("/404");
             });
 
-            //server.Get("/:testvar", (req, res) =>
-            //{
-            //    var test = req.Params["testvar"];
-            //    res.SendString("You wrote: " + test);
-            //});
+            server.SetSecuritySettings(false);
 
-            server.Get("/1", (req, res) =>
-            {
-                res.SendString("1");
-            });
+            server.AddPlugin<IJsonConverter, SimpleNewtonsoftJsonConverter>(new SimpleNewtonsoftJsonConverter());
 
-            server.Get("/1/*", (req, res) =>
-            {
-                res.SendString("1*");
-            });
-
-            server.Get("/1/2/:test/:test2", (req, res) =>
-            {
-                var pars = new RenderParams
-                    {
-                        { "data1", req.Params["test"] },
-                        { "data2", "{\"test\":" + req.Params["test2"] + "}" }
-                    };
-                res.RenderPage("./public/index.ecs", pars);
-            });
-            //server.Get("/test2", (req, res) =>
-            //{
-            //    var pars = new RenderParams
-            //    {
-            //        { "data1", "data data data data ..." },
-            //        { "data2", "test test test test."}
-            //    };
-            //    res.RenderPage("./public/index.ecs", pars);
-            //});
-
-            server.Start();
+            server.Start(true);
             Console.WriteLine("\nPress any key to close");
             Console.ReadKey();
             server.Stop();

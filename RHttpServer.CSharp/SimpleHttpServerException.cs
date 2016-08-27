@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WebServerHoster
+namespace RHttpServer
 {
     public class SimpleHttpServerException : Exception
     {

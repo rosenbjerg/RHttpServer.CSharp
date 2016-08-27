@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WebServerHoster
+namespace RHttpServer
 {
     public class SimpleHttpAction
     {
@@ -30,7 +30,6 @@ namespace WebServerHoster
         public bool HasRouteStep(int step, params string[] route)
         {
             if (step > RouteLength - 1) return false;
-            if (step == -1) step = RouteLength -1;
             var rs = RouteTree[step];
             foreach (var s in route)
             {
