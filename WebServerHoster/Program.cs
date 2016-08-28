@@ -1,22 +1,20 @@
 ﻿using System;
 using RHttpServer;
-using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
+using RHttpServer.Plugins.External;
 
-namespace WebServerHoster
+namespace RHSCommandLine
 {
     class Program
     {
         static void Main(string[] args)
         {
-            var port = 3000;
-
-            var server = new SimpleHttpServer("./public", port, 4);
-
-
+            var server = new RHttpServer.RHttpServer(3000, 3, "./public");
+            
             server.Get("/", (req, res) =>
             {
-                res.SendString("Welcome");
+                var sessionId = req.Cookies["ss-id"];
+                res.SendString("ok");
             });
 
             server.Get("/file", (req, res) =>
@@ -31,7 +29,7 @@ namespace WebServerHoster
                 pars.Add("data2", "{\"Test\":\"test2\"}");
                 res.RenderPage("./public/index.ecs", pars);
             });
-            
+
             server.Get("/:test", (req, res) =>
             {
                 var pars = server.CreateRenderParams();
@@ -43,7 +41,7 @@ namespace WebServerHoster
 
             server.Get("/404", (req, res) =>
             {
-                res.SendString("404 - Nothing found");
+                res.SendString("404");
             });
 
             server.Get("/*", (req, res) =>
@@ -51,12 +49,12 @@ namespace WebServerHoster
                 res.Redirect("/404");
             });
 
-            server.InitializeDefaultPlugins(true, new SimpleHttpSecuritySettings(2, 20000));
+
+            server.InitializeDefaultPlugins(false, new SimpleHttpSecuritySettings(2, 20000));
+            server.AddPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
 
             server.Start(true);
-            Console.WriteLine("\nPress any key to close");
             Console.ReadKey();
-            server.Stop();
         }
     }
 }

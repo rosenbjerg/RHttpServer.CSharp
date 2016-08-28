@@ -4,15 +4,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DFED1F90-EF2C-44FD-A940-2F1AA9E64203}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{357FC68B-88D5-4975-9F05-38BAEEC232C0}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RHttpServer</RootNamespace>
-    <AssemblyName>RHttpServer</AssemblyName>
+    <RootNamespace>SimpleServer.RHttpServer</RootNamespace>
+    <AssemblyName>SimpleServer.RHttpServer</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -20,9 +22,9 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -31,10 +33,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -45,32 +43,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Plugins\Default\EcsPageRenderer.cs" />
-    <Compile Include="Plugins\IPageRenderer.cs" />
-    <Compile Include="Plugins\IJsonConverter.cs" />
-    <Compile Include="Plugins\RPlugin.cs" />
-    <Compile Include="Plugins\IHttpSecurityHandler.cs" />
-    <Compile Include="Plugins\IHttpSecuritySettings.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Response\RenderParams.cs" />
-    <Compile Include="Request\RequestParams.cs" />
-    <Compile Include="RHttpAction.cs" />
-    <Compile Include="Plugins\Default\SimpleHttpSecurityHandler.cs" />
-    <Compile Include="Plugins\Default\SimpleHttpSecuritySettings.cs" />
-    <Compile Include="RHttpServer.cs" />
-    <Compile Include="RHttpServerException.cs" />
-    <Compile Include="Plugins\Default\NewtonsoftJsonReflConverter.cs" />
-    <Compile Include="Plugins\RPluginCollection.cs" />
-    <Compile Include="Request\RRequest.cs" />
-    <Compile Include="Response\RResponse.cs" />
-    <Compile Include="Plugins\Default\HttpRequester.cs" />
-    <Compile Include="Request\RCookies.cs" />
-    <Compile Include="Request\RHeaders.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\MongoDB.RHttpServer\SimpleMongoDB.RHttpServer.csproj">
+      <Project>{fce8ac38-4668-4247-a1a3-a8e224823133}</Project>
+      <Name>SimpleMongoDB.RHttpServer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RHttpServer.CSharp\RHttpServer.csproj">
+      <Project>{dfed1f90-ef2c-44fd-a940-2f1aa9e64203}</Project>
+      <Name>RHttpServer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\SimpleSQLiteDb.RHttpServer\SimpleSQLiteDB.RHttpServer.csproj">
+      <Project>{f5a2e0c3-3c91-4851-bf44-cbbd86851ff4}</Project>
+      <Name>SimpleSQLiteDB.RHttpServer</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

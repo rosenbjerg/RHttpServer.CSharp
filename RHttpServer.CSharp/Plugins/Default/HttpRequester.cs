@@ -7,10 +7,10 @@ namespace RHttpServer.Plugins.Default
         internal HttpRequester()
         {
             RequestsInSession = 1;
-            Visited = DateTime.Now;
+            SessionStarted = DateTime.Now;
         }
 
-        public DateTime Visited { get; }
+        public DateTime SessionStarted { get; }
 
         public int RequestsInSession { get; private set; }
         
@@ -21,7 +21,10 @@ namespace RHttpServer.Plugins.Default
             {
                 RequestsInSession++;
             }
+            LatestVisit = DateTime.Now;
             return RequestsInSession;
         }
+
+        public DateTime LatestVisit { get; private set; }
     }
 }

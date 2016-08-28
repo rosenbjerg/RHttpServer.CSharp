@@ -1,17 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net;
 using System.Text;
 using RHttpServer.Plugins;
 
-namespace RHttpServer
+namespace RHttpServer.Response
 {
     /// <summary>
     /// Class representing the reponse to a clients request
     /// </summary>
-    public class SimpleResponse
+    public class RResponse
     {
         protected static readonly IDictionary<string, string> MimeTypes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
             #region extension to MIME type list
@@ -85,17 +84,17 @@ namespace RHttpServer
 
         protected bool Closed = false;
 
-        internal SimpleResponse(HttpListenerResponse res, SimplePlugins simplePlugins)
+        internal RResponse(HttpListenerResponse res, RPluginCollection rPluginCollection)
         {
             UnderlyingResponse = res;
-            Plugins = simplePlugins;
+            Plugins = rPluginCollection;
         }
-
-        public SimplePlugins Plugins { get; }
+        
+        public RPluginCollection Plugins { get; }
 
         /// <summary>
         /// The underlying HttpListenerResponse
-        /// This implementation of SimpleResponse is leaky, to avoid limiting you
+        /// This implementation of RResponse is leaky, to avoid limiting you
         /// </summary>
         public HttpListenerResponse UnderlyingResponse { get; }
 
@@ -113,15 +112,17 @@ namespace RHttpServer
         /// Sends data as text
         /// </summary>
         /// <param name="data">The text data to send</param>
+        /// <param name="status">The status code for the response</param>
         public void SendString(string data, HttpStatusCode status = HttpStatusCode.OK)
         {
-            if (Closed) throw new SimpleHttpServerException("You can only send the response once");
+            if (Closed) throw new RHttpServerException("You can only send the response once");
             var bytes = Encoding.UTF8.GetBytes(data);
             try
             {
                 UnderlyingResponse.ContentType = "text/plain";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{RHttpServer.Version}");
                 UnderlyingResponse.StatusCode = (int)status;
             }
             catch (Exception)
@@ -135,14 +136,15 @@ namespace RHttpServer
                 Closed = true;
             }
         }
-        
+
         /// <summary>
-        /// Sends object serialized to text using Newtonsoft.Json generic serializer
+        /// Sends object serialized to text using the current IJsonConverter plugin
         /// </summary>
         /// <param name="data">The object to be serialized and send</param>
+        /// <param name="status">The status code for the response</param>
         public void SendJson(object data, HttpStatusCode status = HttpStatusCode.OK)
         {
-            if (Closed) throw new SimpleHttpServerException("You can only send the response once");
+            if (Closed) throw new RHttpServerException("You can only send the response once");
             var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
             try
             {
@@ -168,9 +170,10 @@ namespace RHttpServer
         /// </summary>
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
+        /// <param name="status">The status code for the response</param>
         public void SendFile(string filepath, string mime = null, HttpStatusCode status = HttpStatusCode.OK)
         {
-            if (Closed) throw new SimpleHttpServerException("You can only send the response once");
+            if (Closed) throw new RHttpServerException("You can only send the response once");
             using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 try
@@ -208,9 +211,10 @@ namespace RHttpServer
         /// </summary>
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
+        /// <param name="status">The status code for the response</param>
         public void Download(string filepath, string mime = null, HttpStatusCode status = HttpStatusCode.OK)
         {
-            if (Closed) throw new SimpleHttpServerException("You can only send the response once");
+            if (Closed) throw new RHttpServerException("You can only send the response once");
             using (var input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 try
@@ -249,10 +253,10 @@ namespace RHttpServer
         /// </summary>
         /// <param name="pagefilepath">The path of the file to be rendered</param>
         /// <param name="parameters">The parameter collection used when replacing data</param>
-        /// <param name="status">The status code to send</param>
+        /// <param name="status">The status code for the response</param>
         public void RenderPage(string pagefilepath, RenderParams parameters, HttpStatusCode status = HttpStatusCode.OK)
         {
-            if (Closed) throw new SimpleHttpServerException("You can only send the response once");
+            if (Closed) throw new RHttpServerException("You can only send the response once");
             var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
             try
             {

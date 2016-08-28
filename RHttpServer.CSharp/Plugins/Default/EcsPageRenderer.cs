@@ -1,12 +1,13 @@
 using System.Collections.Generic;
+using RHttpServer.Response;
 
 namespace RHttpServer.Plugins.Default
 {
-    internal sealed class EcsPageRenderer : SimplePlugin, IPageRenderer
+    internal sealed class EcsPageRenderer : RPlugin, IPageRenderer
     {
         public string Render(string filepath, RenderParams parameters)
         {
-            if (!filepath.ToLowerInvariant().EndsWith(".ecs")) throw new SimpleHttpServerException("Please use .ecs files when rendering pages");
+            if (!filepath.ToLowerInvariant().EndsWith(".ecs")) throw new RHttpServerException("Please use .ecs files when rendering pages");
             var sb = new System.Text.StringBuilder(System.IO.File.ReadAllText(filepath));
             foreach (var parPair in parameters)
             {

@@ -1,15 +1,15 @@
 namespace RHttpServer.Plugins
 {
     /// <summary>
-    /// Abstract class that all plugins must derive from
+    /// Abstract class that all pluginCollection must derive from
     /// </summary>
-    public abstract class SimplePlugin
+    public abstract class RPlugin
     {
-        private SimplePlugins _plugins;
+        private RPluginCollection _pluginCollection;
 
-        internal void SetPlugins(SimplePlugins plugins)
+        internal void SetPlugins(RPluginCollection pluginCollection)
         {
-            _plugins = plugins;
+            _pluginCollection = pluginCollection;
         }
 
         /// <summary>
@@ -19,7 +19,7 @@ namespace RHttpServer.Plugins
         /// <returns>The instance of the plugin</returns>
         protected TPluginInterface UsePlugin<TPluginInterface>()
         {
-            return _plugins.Use<TPluginInterface>();
+            return _pluginCollection.Use<TPluginInterface>();
         }
     }
 }

@@ -1,9 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using RHttpServer.Plugins;
 
-namespace RHttpServer
+namespace RHttpServer.Response
 {
     /// <summary>
     /// Parameters used when rendering a page
@@ -66,7 +65,7 @@ namespace RHttpServer
             return GetEnumerator();
         }
 
-        internal void SetPlugins(IPageRenderer renderer)
+        internal void SetRenderer(IPageRenderer renderer)
         {
             _renderer = renderer;
         }

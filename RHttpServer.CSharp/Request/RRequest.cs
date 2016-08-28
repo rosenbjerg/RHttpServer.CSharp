@@ -1,16 +1,18 @@
 using System.Net;
 
-namespace RHttpServer
+namespace RHttpServer.Request
 {
     /// <summary>
     /// Class representing a request from a client
     /// </summary>
-    public class SimpleRequest
+    public class RRequest
     {
-        internal SimpleRequest(HttpListenerRequest req, RequestParams par)
+        internal RRequest(HttpListenerRequest req, RequestParams par)
         {
             UnderlyingRequest = req;
             Params = par;
+            Cookies = new RCookies(req.Cookies);
+            Headers = new RHeaders(req.Headers);
         }
 
         /// <summary>
@@ -34,8 +36,19 @@ namespace RHttpServer
                     return reader.ReadToEnd();
                 }
             }
+
         }
-        
+
+        /// <summary>
+        /// The headers contained in the request
+        /// </summary>
+        public RHeaders Headers { get; set; }
+
+        /// <summary>
+        /// The cookies contained in the request
+        /// </summary>
+        public RCookies Cookies { get; }
+
         /// <summary>
         /// The url parameters of the request
         /// </summary>
@@ -43,7 +56,7 @@ namespace RHttpServer
 
         /// <summary>
         /// The underlying HttpListenerRequest
-        /// This implementation of SimpleRequest is leaky, to avoid limiting you
+        /// This implementation of RRequest is leaky, to avoid limiting you
         /// </summary>
         public HttpListenerRequest UnderlyingRequest { get; }
     }

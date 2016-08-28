@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using RHttpServer.Request;
+using RHttpServer.Response;
 
 namespace RHttpServer
 {
-    public class SimpleHttpAction
+    public class RHttpAction
     {
-        internal SimpleHttpAction(string route, Action<SimpleRequest, SimpleResponse> action)
+        internal RHttpAction(string route, Action<RRequest, RResponse> action)
         {
             RouteTree = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
             RouteLength = RouteTree.Length;
@@ -22,7 +24,7 @@ namespace RHttpServer
 
         public List<KeyValuePair<int, string>> Params { get; } = new List<KeyValuePair<int, string>>();
 
-        public Action<SimpleRequest, SimpleResponse> Action { get; }
+        public Action<RRequest, RResponse> Action { get; }
         public int RouteLength { get; }
 
         public readonly string[] RouteTree;

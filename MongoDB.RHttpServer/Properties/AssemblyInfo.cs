@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("RHttpServer.CSharp")]
-[assembly: AssemblyDescription("A simple Http server framework based on the .NET platform")]
+[assembly: AssemblyTitle("MongoDB.RHttpServer")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Rosenbjerg Softworks")]
-[assembly: AssemblyProduct("RHttpServer.CSharp")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("MongoDB.RHttpServer")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("dfed1f90-ef2c-44fd-a940-2f1aa9e64203")]
+[assembly: Guid("fce8ac38-4668-4247-a1a3-a8e224823133")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -3,7 +3,7 @@ namespace RHttpServer.Plugins.Default
     /// <summary>
     /// Very simple JsonConverter plugin using Newtonsoft.Json generic methods
     /// </summary>
-    internal sealed class SimpleNewtonsoftJsonConverter : SimplePlugin, IJsonConverter
+    internal sealed class NewtonsoftJsonReflConverter : RPlugin, IJsonConverter
     {
         public string Serialize<T>(T obj)
         {
