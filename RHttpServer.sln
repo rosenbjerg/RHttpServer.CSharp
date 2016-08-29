@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleMongoDB.RHttpServer",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleSQLiteDB.RHttpServer", "SimpleSQLiteDb.RHttpServer\SimpleSQLiteDB.RHttpServer.csproj", "{F5A2E0C3-3C91-4851-BF44-CBBD86851FF4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Builder.RHttpServer", "Builder.RHttpServer\Builder.RHttpServer.csproj", "{1E1204E2-E641-48F4-B247-9F93FACE34A7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{F5A2E0C3-3C91-4851-BF44-CBBD86851FF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F5A2E0C3-3C91-4851-BF44-CBBD86851FF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F5A2E0C3-3C91-4851-BF44-CBBD86851FF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E1204E2-E641-48F4-B247-9F93FACE34A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E1204E2-E641-48F4-B247-9F93FACE34A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E1204E2-E641-48F4-B247-9F93FACE34A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E1204E2-E641-48F4-B247-9F93FACE34A7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

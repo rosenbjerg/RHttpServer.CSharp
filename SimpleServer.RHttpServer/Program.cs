@@ -51,7 +51,7 @@ namespace RHSCommandLine
 
 
             server.InitializeDefaultPlugins(false, new SimpleHttpSecuritySettings(2, 20000));
-            server.AddPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
+            //server.AddPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
 
             server.Start(true);
             Console.ReadKey();

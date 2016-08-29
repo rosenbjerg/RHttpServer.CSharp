@@ -92,6 +92,12 @@ namespace RHttpServer.Response
         
         public RPluginCollection Plugins { get; }
 
+        public void AddHeader(string fieldName, string fieldValue)
+        {
+            UnderlyingResponse.AddHeader(fieldName, fieldValue);
+        }
+
+
         /// <summary>
         /// The underlying HttpListenerResponse
         /// This implementation of RResponse is leaky, to avoid limiting you
