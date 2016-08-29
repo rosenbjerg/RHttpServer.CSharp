@@ -48,6 +48,14 @@ server.InitializeDefaultPlugins();
 server.Start(true);
 ```
 
+# Plug-ins
+RHttpServer is created to be easy to build on top of. 
+The server supports plug-ins, and offer a method to easily add new functionality.
+The plugin system works by registering plug-ins before starting the server, so all plug-ins are ready when serving requests.
+Some of the default functionality is implemented through plug-ins, and can easily customized or changed entirely.
+The server comes with default handlers for json (Newtonsoft), page renderering (ecs) and basic security
+You use a non-default
+
 # The .ecs file format
 The .ecs file format is merely an extension used for html pages with ecs-tags.
 ecs-tags have the form <%TAG%>, so if i wanted a tag named 'foo' on my page, 
@@ -57,3 +65,13 @@ The file extension is enforced by the default page renderer to avoid confusion w
 
 The format is inspired by the ejs format.
 
+The file extension is enforced by the default page renderer to avoid confusion with regular html files without tags.
+
+The format is inspired by the ejs format, though you cannot embed JavaScript or C# for that matter, in the pages.
+This was chosen because i did NOT like the idea behind it.
+
+Send your dynamic content as RenderParams instead of embedding the code for generation of the content in the html. Please, separation of concerns.
+
+
+# Why?
+Because i like C#, the .NET framework and type-safety, but i also like the use-patterns of nodejs, with expressjs especially.
