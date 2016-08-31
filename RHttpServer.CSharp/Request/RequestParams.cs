@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Request
+namespace RHttpServer.Core.Request
 {
     /// <summary>
     /// Object containing parameters for a request

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using RHttpServer.Request;
-using RHttpServer.Response;
+using RHttpServer.Core.Request;
+using RHttpServer.Core.Response;
 
-namespace RHttpServer
+namespace RHttpServer.Core
 {
     public class RHttpAction
     {

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
-using RHttpServer.Plugins;
+using RHttpServer.Core.Plugins;
 
-namespace RHttpServer.Response
+namespace RHttpServer.Core.Response
 {
     /// <summary>
     /// Class representing the reponse to a clients request

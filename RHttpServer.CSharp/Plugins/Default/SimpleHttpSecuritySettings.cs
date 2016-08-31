@@ -1,4 +1,4 @@
-﻿namespace RHttpServer.Plugins.Default
+﻿namespace RHttpServer.Core.Plugins.Default
 {
     /// <summary>
     /// The default security settings

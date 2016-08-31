@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using RHttpServer.Plugins;
+using RHttpServer.Core.Plugins;
 
-namespace RHttpServer.Response
+namespace RHttpServer.Core.Response
 {
     /// <summary>
     /// Parameters used when rendering a page

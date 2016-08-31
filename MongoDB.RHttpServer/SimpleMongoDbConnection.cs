@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using RHttpServer.Core.Plugins;
 
 namespace RHttpServer.Plugins.External
 {

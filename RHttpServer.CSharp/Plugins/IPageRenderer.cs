@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using RHttpServer.Response;
+using RHttpServer.Core.Response;
 
-namespace RHttpServer.Plugins
+namespace RHttpServer.Core.Plugins
 {
     public interface IPageRenderer
     {

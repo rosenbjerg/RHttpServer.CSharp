@@ -5,7 +5,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RHttpServer.Plugins.Default
+namespace RHttpServer.Core.Plugins.Default
 {
     /// <summary>
     /// The default security handler

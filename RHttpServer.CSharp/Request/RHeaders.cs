@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using System.Linq;
 
-namespace RHttpServer.Request
+namespace RHttpServer.Core.Request
 {
     /// <summary>
     /// Ease-of-use wrapper for request headers

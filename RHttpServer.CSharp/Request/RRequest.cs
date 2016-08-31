@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace RHttpServer.Request
+namespace RHttpServer.Core.Request
 {
     /// <summary>
     /// Class representing a request from a client

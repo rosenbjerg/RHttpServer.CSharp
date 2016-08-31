@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RHttpServer
+namespace RHttpServer.Core
 {
     internal class RHttpServerException : Exception
     {

@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
-using RHttpServer.Plugins;
-using RHttpServer.Plugins.Default;
-using RHttpServer.Request;
-using RHttpServer.Response;
+using RHttpServer.Core.Plugins;
+using RHttpServer.Core.Plugins.Default;
+using RHttpServer.Core.Request;
+using RHttpServer.Core.Response;
 
-namespace RHttpServer
+namespace RHttpServer.Core
 {
     /// <summary>
     /// Represents a HTTP server that can be configured before starting
@@ -202,7 +201,7 @@ namespace RHttpServer
         public void InitializeDefaultPlugins(bool securityOn = false, SimpleHttpSecuritySettings simpleHttpSecuritySettings = null)
         {
             if (_defPluginsReady) return;
-            if (!_rPluginCollection.IsRegistered<IJsonConverter>()) AddPlugin<IJsonConverter, NewtonsoftJsonReflConverter>(new NewtonsoftJsonReflConverter());
+            if (!_rPluginCollection.IsRegistered<IJsonConverter>()) AddPlugin<IJsonConverter, ServiceStackJsonConverter>(new ServiceStackJsonConverter());
             if (!_rPluginCollection.IsRegistered<IPageRenderer>()) AddPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
             if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>()) AddPlugin<IHttpSecurityHandler, SimpleHttpSecurityHandler>(new SimpleHttpSecurityHandler());
             _defPluginsReady = true;

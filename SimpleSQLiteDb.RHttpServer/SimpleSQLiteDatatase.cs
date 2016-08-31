@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using RHttpServer.Core.Plugins;
 using SQLite;
 
 namespace RHttpServer.Plugins.External

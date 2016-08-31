@@ -1,5 +1,5 @@
 ﻿using System;
-using RHttpServer.Plugins.Default;
+using RHttpServer.Core.Plugins.Default;
 
 namespace SimpleServer.RHttpServer
 {
@@ -7,8 +7,8 @@ namespace SimpleServer.RHttpServer
     {
         static void Main(string[] args)
         {
-            var server = new global::RHttpServer.RHttpServer(3000, 3, "./public");
-            
+            var server = new global::RHttpServer.Core.RHttpServer(3000, 3, "./public");
+
             server.Get("/", (req, res) =>
             {
                 res.SendString("ok");

@@ -1,4 +1,4 @@
-namespace RHttpServer.Plugins
+namespace RHttpServer.Core.Plugins
 {
     /// <summary>
     /// Interface for pluginCollection that is used for Json serialization and deserialization

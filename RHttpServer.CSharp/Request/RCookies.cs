@@ -1,7 +1,7 @@
 using System;
 using System.Net;
 
-namespace RHttpServer.Request
+namespace RHttpServer.Core.Request
 {
     /// <summary>
     /// Ease-of-use wrapper for request cookies

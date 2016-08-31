@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1E1204E2-E641-48F4-B247-9F93FACE34A7}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -14,6 +14,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -53,26 +54,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="Builder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <EmbeddedResource Include="BuilderDeps\Server.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RHttpServer.CSharp\RHttpServer.csproj">
-      <Project>{dfed1f90-ef2c-44fd-a940-2f1aa9e64203}</Project>
-      <Name>RHttpServer</Name>
-    </ProjectReference>
+    <None Include="ServerDeps\mscorlib.dll" />
+    <EmbeddedResource Include="ServerDeps\System.Core.dll" />
+    <EmbeddedResource Include="ServerDeps\System.dll" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="mscorlib.dll" />
-    <EmbeddedResource Include="System.Core.dll" />
-    <EmbeddedResource Include="System.dll" />
+    <EmbeddedResource Include="ServerDeps\System.Linq.dll" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="System.Linq.dll" />
+    <EmbeddedResource Include="BuilderDeps\Microsoft.Web.XmlTransform.dll" />
+    <EmbeddedResource Include="BuilderDeps\NuGet.Core.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
