@@ -1,12 +1,12 @@
 ﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.CSharp;
 using NuGet;
@@ -15,25 +15,104 @@ namespace Builder.RHttpServer
 {
     class Program
     {
+        private static readonly List<ServerProcess> RunningProcesses = new List<ServerProcess>();
+
         static void Main(string[] args)
         {
-            var file = "./Server.cs";/*args[0];*/
-            var dir = Path.GetDirectoryName(file);
-            var modulesDir = Path.Combine(dir, "ServerLibs");
-            Directory.CreateDirectory(modulesDir);
-            var dlls = RestoreMissingNugets(modulesDir);
-            CompileAndStart(file, file.Replace(".cs", ".exe"), dlls);
-            Console.ReadKey();
+            if (args.Length > 0)
+            {
+                if (args.Length > 1)
+                {
+                    switch (args[0])
+                    {
+                        case "build":
+                            if (Directory.Exists(args[1]))
+                            {
+                                PrepareAndCompile(args[1]);
+                            }
+                            break;
+                        case "start":
+                            if (File.Exists(args[1]) && args[1].EndsWith(".exe"))
+                            {
+                                StartServer(args[1]);
+                            }
+                            break;
+                    }
+                }
+                else if (args[0] == "stopall")
+                {
+                    LoadRunningProcessList();
+                    var procs = new List<ServerProcess>(RunningProcesses);
+                    foreach (var process in procs)
+                    {
+                        KillProcess(process);
+                    }
+                    SaveRunningProcessList();
+                }
+            }
         }
 
-        private static IEnumerable<string> RestoreMissingNugets(string dllSavePath)
+        private static void PrepareAndCompile(string inputDir)
+        {
+            var folder = inputDir;
+            var topFolder = Path.GetDirectoryName(Path.GetFullPath(folder));
+            var csFiles = Directory.EnumerateFiles(folder, "*.cs", SearchOption.AllDirectories).ToArray();
+            var packageConfig = Directory.EnumerateFiles(folder, "packages.config", SearchOption.AllDirectories).FirstOrDefault();
+
+            var modulesFolder = Path.Combine(topFolder, "ServerPackages");
+            Directory.CreateDirectory(modulesFolder);
+            if (!string.IsNullOrWhiteSpace(packageConfig))
+            {
+                RestoreMissingNugets(packageConfig, modulesFolder);
+            }
+            CreateSystemLibraries(modulesFolder);
+            var dlls = Directory.EnumerateFiles(modulesFolder, "*.dll", SearchOption.AllDirectories).ToList();
+            dlls = MakePathsRelativeTo(dlls, topFolder);
+            csFiles = MakePathsRelativeTo(csFiles.ToList(), topFolder).ToArray();
+            Compile(csFiles, "Server.exe", dlls);
+        }
+
+        private static List<string> MakePathsRelativeTo(List<string> dlls, string topFolder)
+        {
+            for (int index = 0; index < dlls.Count; index++)
+            {
+                var dll = dlls[index].Replace(topFolder + "\\", "./").Replace("\\", "/");
+                dlls[index] = dll;
+            }
+            return dlls;
+        }
+
+        private static void CreateSystemLibraries(string modulesFolder)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+
+            var internalResources = assembly.GetManifestResourceNames();
+            
+            var dir = Path.Combine(modulesFolder, "SystemLibs");
+            Directory.CreateDirectory(dir);
+
+            for (int index = 0; index < internalResources.Length; index++)
+            {
+                var res = internalResources[index];
+                using (Stream stream = assembly.GetManifestResourceStream(res))
+                {
+                    FileStream fileStream = File.Create(Path.Combine(dir, res.Replace("Builder.RHttpServer.", "")), (int) stream.Length);
+                    byte[] bytesInStream = new byte[stream.Length];
+                    stream.Read(bytesInStream, 0, bytesInStream.Length);
+                    fileStream.Write(bytesInStream, 0, bytesInStream.Length);
+                    fileStream.Close();
+                }
+            }
+        }
+
+        private static void RestoreMissingNugets(string packagePath, string dllSavePath)
         {
             IPackageRepository repo = PackageRepositoryFactory.Default.CreateRepository("https://packages.nuget.org/api/v2");
 
             //Initialize the package manager
             string tempPath = Path.Combine(dllSavePath, "TEMP");
             Directory.CreateDirectory(tempPath);
-            var files = ReadPackages("./packages.config");
+            var files = ReadPackages(packagePath);
             var existing = Directory.EnumerateDirectories(dllSavePath);
             files = files.Where(f => existing.All(d => new DirectoryInfo(d).Name != f.Name + "." + f.Version)).ToArray();
             PackageManager packageManager = new PackageManager(repo, tempPath);
@@ -45,7 +124,7 @@ namespace Builder.RHttpServer
             foreach (var dir in dirs)
             {
                 var dirName = new DirectoryInfo(dir).Name;
-                var inside = GetLibDlls(dir);
+                var inside = Directory.EnumerateFiles(dir, "*.dll", SearchOption.AllDirectories);
                 var folder = Path.Combine(dllSavePath, dirName);
                 Directory.CreateDirectory(folder);
                 foreach (var i in inside)
@@ -55,28 +134,6 @@ namespace Builder.RHttpServer
                 }
             }
             Directory.Delete(tempPath, true);
-            GetLibDlls(dllSavePath).Select(t => t.L);
-            
-
-            //Download and unzip the package
-            //packageManager.
-        }
-
-        private static List<string> GetLibDlls(string path)
-        {
-            List<string> ret = new List<string>();
-            var dirs = Directory.EnumerateDirectories(path);
-            foreach (var dir in dirs)
-            {
-                ret.AddRange(GetLibDlls(dir));
-            }
-
-            var files = Directory.EnumerateFiles(path).Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase));
-            foreach (var file in files)
-            {
-                ret.Add(file);
-            }
-            return ret;
         }
 
         private static Package[] ReadPackages(string packagesDotConfig)
@@ -101,24 +158,27 @@ namespace Builder.RHttpServer
             return list.ToArray();
         }
 
-        private static void CompileAndStart(string csFile, string executableName, IEnumerable<string> dlls)
+        private static void Compile(string[] csFiles, string executableName, IEnumerable<string> dlls)
         {
-
             var csc = new CSharpCodeProvider();
 
-            string[] references = { "System.dll", "System.Linq.dll", "System.Core.dll", "mscorlib.dll" };
+            //string[] references =
+            //{
+            //    "System.dll", "System.Linq.dll", "System.Core.dll", "mscorlib.dll"
+            //};
             var parameters = new CompilerParameters
             {
                 GenerateInMemory = false,
                 TreatWarningsAsErrors = false,
                 GenerateExecutable = true,
                 CompilerOptions = "/optimize",
-                OutputAssembly = executableName,
+                OutputAssembly = executableName
+
             };
-            
-            parameters.ReferencedAssemblies.AddRange(references);
+
+            //parameters.ReferencedAssemblies.AddRange(references);
             parameters.ReferencedAssemblies.AddRange(dlls.ToArray());
-            CompilerResults compile = csc.CompileAssemblyFromSource(parameters, File.ReadAllText(csFile));
+            CompilerResults compile = csc.CompileAssemblyFromSource(parameters, csFiles.Select(File.ReadAllText).ToArray());
 
             if (compile.Errors.HasErrors)
             {
@@ -135,6 +195,79 @@ namespace Builder.RHttpServer
                 Console.WriteLine("Compiled and saved");
             }
         }
+
+        private static void StartServer(string serverExecutablePath)
+        {
+            if (File.Exists(serverExecutablePath))
+            {
+
+                Process proc = new Process
+                {
+                    StartInfo =
+                    {
+                        FileName = serverExecutablePath,
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    }
+                };
+
+                proc.Start();
+                var sProc = new ServerProcess(proc.Id, serverExecutablePath, proc.ProcessName);
+                RunningProcesses.Add(sProc);
+                SaveRunningProcessList();
+            }
+        }
+
+        private static void KillProcess(ServerProcess sProc)
+        {
+            if (Process.GetProcesses().Any(p => p.Id == sProc.Id))
+            {
+                Process p = Process.GetProcessById(sProc.Id);
+                p.Kill();
+            }
+            RunningProcesses.Remove(sProc);
+        }
+
+        private static void SaveRunningProcessList()
+        {
+            var hiddenFileName = "./.sproclist.bin";
+            FileStream stream = File.Create(hiddenFileName);
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(stream, RunningProcesses);
+            stream.Close();
+            File.SetAttributes(hiddenFileName,
+                FileAttributes.Archive /*|*/
+                //FileAttributes.Hidden
+            );
+        }
+
+        private static void LoadRunningProcessList(string path = "./.sproclist.bin")
+        {
+            if (!File.Exists(path)) return;
+            using (var stream = File.OpenRead(path))
+            {
+                var formatter = new BinaryFormatter();
+                var v = (List<ServerProcess>)formatter.Deserialize(stream);
+                RunningProcesses.AddRange(v);
+            }
+        }
+
+    }
+
+    [Serializable]
+    public class ServerProcess
+    {
+        public ServerProcess(int id, string path, string pname)
+        {
+            Id = id;
+            Path = System.IO.Path.GetFullPath(path);
+            Name = pname;
+        }
+
+        public string Name { get; set; }
+        public int Id { get; set; }
+        public string Path { get; set; }
+
     }
 
     public class Package

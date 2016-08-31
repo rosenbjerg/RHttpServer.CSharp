@@ -1,19 +1,16 @@
 ﻿using System;
-using RHttpServer;
 using RHttpServer.Plugins.Default;
-using RHttpServer.Plugins.External;
 
-namespace RHSCommandLine
+namespace SimpleServer.RHttpServer
 {
-    class Program
+    class Server
     {
         static void Main(string[] args)
         {
-            var server = new RHttpServer.RHttpServer(3000, 3, "./public");
+            var server = new global::RHttpServer.RHttpServer(3000, 3, "./public");
             
             server.Get("/", (req, res) =>
             {
-                var sessionId = req.Cookies["ss-id"];
                 res.SendString("ok");
             });
 
