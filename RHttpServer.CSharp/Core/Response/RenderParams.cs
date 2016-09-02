@@ -18,21 +18,21 @@ namespace RHttpServer.Core.Response
         /// <summary>
         /// Adds tag and replacement-data pair to parameters
         /// </summary>
-        /// <param name="parName">The tag id</param>
+        /// <param name="parTag">The tag id</param>
         /// <param name="parData">The replacement-data for the tag</param>
-        public void Add(string parName, string parData)
+        public void Add(string parTag, string parData)
         {
-            _dict.Add(_renderer.Parametrize(parName, parData));
+            _dict.Add(_renderer.Parametrize(parTag, parData));
         }
 
         /// <summary>
         /// Adds tag and json-serialized replacement-data pair to parameters
         /// </summary>
-        /// <param name="parName">The tag id</param>
+        /// <param name="parTag">The tag id</param>
         /// <param name="parData">The replacement-data object for the tag</param>
-        public void Add(string parName, object parData)
+        public void Add(string parTag, object parData)
         {
-            _dict.Add(_renderer.ParametrizeObject(parName, parData));
+            _dict.Add(_renderer.ParametrizeObject(parTag, parData));
         }
 
         /// <summary>

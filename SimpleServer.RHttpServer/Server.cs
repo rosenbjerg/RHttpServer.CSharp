@@ -7,6 +7,7 @@ namespace SimpleRHttpServer
     {
         static void Main(string[] args)
         {
+            // TODO Add render cache
             var server = new RHttpServer.Core.HttpServer(3000, 3, "./public");
 
             server.Get("/", (req, res) =>
@@ -27,11 +28,30 @@ namespace SimpleRHttpServer
                 res.RenderPage("./public/index.ecs", pars);
             });
 
-            server.Get("/:test/:test2", (req, res) =>
+            server.Get("/render2", (req, res) =>
             {
                 var pars = server.CreateRenderParams();
-                pars.Add("data1", req.Params["test"]);
-                pars.Add("data2", req.Params["test2"]);
+                pars.Add("data1", "test2");
+                pars.Add("data2", "{\"Test\":\"test2\"}");
+                res.RenderPage("./public/index.ecs", pars);
+            });
+
+            server.Get("/render/3", (req, res) =>
+            {
+                var pars = server.CreateRenderParams();
+                pars.Add("data1", "test1");
+                pars.Add("data2", "{\"Test\":\"test2\"}");
+                res.RenderPage("./public/index.ecs", pars);
+            });
+
+            server.Get("/:par1/:par2", (req, res) =>
+            {
+                var pars = server.CreateRenderParams();
+                pars.Add("data1", req.Params["par1"]);
+
+                var q = req.Params["par2"];
+                if (!q.EndsWith("?")) q += "?";
+                pars.Add("data2", "{\"question\":\"" + q + "\", \"answer\":" + 42 + "}");
 
                 res.RenderPage("./public/index.ecs", pars);
             });
@@ -47,7 +67,7 @@ namespace SimpleRHttpServer
             });
 
 
-            server.InitializeDefaultPlugins(false, new SimpleHttpSecuritySettings(2, 20000));
+            server.InitializeDefaultPlugins(securitySettings: new SimpleHttpSecuritySettings(2, 20000));
             //server.AddPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
 
             server.Start(true);

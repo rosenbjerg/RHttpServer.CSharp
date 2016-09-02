@@ -45,6 +45,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Core\HttpMethod.cs" />
+    <Compile Include="Core\RouteTree.cs" />
+    <Compile Include="Core\RouteTreeManager.cs" />
     <Compile Include="Plugins\Default\EcsPageRenderer.cs" />
     <Compile Include="Plugins\IPageRenderer.cs" />
     <Compile Include="Plugins\IJsonConverter.cs" />
