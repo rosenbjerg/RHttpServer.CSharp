@@ -7,8 +7,8 @@
     <ProjectGuid>{357FC68B-88D5-4975-9F05-38BAEEC232C0}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SimpleServer.RHttpServer</RootNamespace>
-    <AssemblyName>SimpleServer.RHttpServer</AssemblyName>
+    <RootNamespace>SimpleRHttpServer</RootNamespace>
+    <AssemblyName>SimpleRHttpServer</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -50,17 +50,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MongoDB.RHttpServer\SimpleMongoDB.RHttpServer.csproj">
-      <Project>{fce8ac38-4668-4247-a1a3-a8e224823133}</Project>
-      <Name>SimpleMongoDB.RHttpServer</Name>
-    </ProjectReference>
     <ProjectReference Include="..\RHttpServer.CSharp\RHttpServer.csproj">
       <Project>{dfed1f90-ef2c-44fd-a940-2f1aa9e64203}</Project>
       <Name>RHttpServer</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SimpleSQLiteDb.RHttpServer\SimpleSQLiteDB.RHttpServer.csproj">
-      <Project>{f5a2e0c3-3c91-4851-bf44-cbbd86851ff4}</Project>
-      <Name>SimpleSQLiteDB.RHttpServer</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

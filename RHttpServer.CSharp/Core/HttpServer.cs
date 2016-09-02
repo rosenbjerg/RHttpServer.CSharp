@@ -7,17 +7,17 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
-using RHttpServer.Core.Plugins;
-using RHttpServer.Core.Plugins.Default;
 using RHttpServer.Core.Request;
 using RHttpServer.Core.Response;
+using RHttpServer.Plugins;
+using RHttpServer.Plugins.Default;
 
 namespace RHttpServer.Core
 {
     /// <summary>
     /// Represents a HTTP server that can be configured before starting
     /// </summary>
-    public class RHttpServer : IDisposable
+    public class HttpServer : IDisposable
     {
         private readonly List<RHttpAction> _getActions = new List<RHttpAction>();
         private readonly List<RHttpAction> _postActions = new List<RHttpAction>();
@@ -33,6 +33,7 @@ namespace RHttpServer.Core
         private readonly ManualResetEventSlim _stop, _ready;
         private readonly ConcurrentQueue<HttpListenerContext> _queue;
         private readonly RPluginCollection _rPluginCollection = new RPluginCollection();
+        private readonly RouteTreeManager _rtman = new RouteTreeManager();
         private bool _defPluginsReady;
         private bool _securityOn;
 
@@ -94,28 +95,32 @@ namespace RHttpServer.Core
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
-        public void Get(string route, Action<RRequest, RResponse> action) => AddToActionList(new RHttpAction(route, action), _getActions);
+        public void Get(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.GET);/*AddToActionList(new RHttpAction(route, action), _getActions);*/
 
         /// <summary>
         /// Add action to handle POST requests to a given route
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
-        public void Post(string route, Action<RRequest, RResponse> action) => AddToActionList(new RHttpAction(route, action), _postActions);
+        public void Post(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.POST);/*AddToActionList(new RHttpAction(route, action), _postActions);*/
 
         /// <summary>
         /// Add action to handle PUT requests to a given route
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
-        public void Put(string route, Action<RRequest, RResponse> action) => AddToActionList(new RHttpAction(route, action), _putActions);
+        public void Put(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.PUT);/*AddToActionList(new RHttpAction(route, action), _putActions);*/
 
         /// <summary>
         /// Add action to handle DELETE requests to a given route
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
-        public void Delete(string route, Action<RRequest, RResponse> action) => AddToActionList(new RHttpAction(route, action), _deleteActions);
+        public void Delete(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);/*AddToActionList(new RHttpAction(route, action), _deleteActions);*/
 
         /// <summary>
         /// Constructs and starts a server with given port and using the given path as public folder.
@@ -124,7 +129,7 @@ namespace RHttpServer.Core
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="port">Port of the server.</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
-        public RHttpServer(int port, int requestHandlerThreads = 2, string path = "")
+        public HttpServer(int port, int requestHandlerThreads = 2, string path = "")
         {
             if (requestHandlerThreads < 1)
             {
@@ -150,13 +155,13 @@ namespace RHttpServer.Core
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
-        public RHttpServer(int requestHandlerThreads = 2, string path = "")
+        public HttpServer(int requestHandlerThreads = 2, string path = "")
         {
             if (requestHandlerThreads < 1) requestHandlerThreads = 1;
             if (path.StartsWith("./")) path = path.Replace("./", Environment.CurrentDirectory);
             PublicDir = path;
             //get an empty port
-            TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+            var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
             Port = ((IPEndPoint)l.LocalEndpoint).Port;
             l.Stop();
@@ -182,7 +187,7 @@ namespace RHttpServer.Core
             _listener.Start();
             _listenerThread.Start();
 
-            for (int i = 0; i < _workers.Length; i++)
+            for (var i = 0; i < _workers.Length; i++)
             {
                 _workers[i] = new Thread(Worker);
                 _workers[i].Start();
@@ -203,7 +208,7 @@ namespace RHttpServer.Core
             if (_defPluginsReady) return;
             if (!_rPluginCollection.IsRegistered<IJsonConverter>()) AddPlugin<IJsonConverter, ServiceStackJsonConverter>(new ServiceStackJsonConverter());
             if (!_rPluginCollection.IsRegistered<IPageRenderer>()) AddPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
-            if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>()) AddPlugin<IHttpSecurityHandler, SimpleHttpSecurityHandler>(new SimpleHttpSecurityHandler());
+            if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>()) AddPlugin<IHttpSecurityHandler, SimpleServerProtection>(new SimpleServerProtection());
             _defPluginsReady = true;
             if (simpleHttpSecuritySettings == null) simpleHttpSecuritySettings = new SimpleHttpSecuritySettings();
             _rPluginCollection.Use<IHttpSecurityHandler>().Settings = simpleHttpSecuritySettings;
@@ -283,27 +288,31 @@ namespace RHttpServer.Core
                 if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request)) Process(context);
             }
         }
-        
-
+     
         private void Process(HttpListenerContext context)
         {
-            string route = context.Request.Url.AbsolutePath;
+            var route = context.Request.Url.AbsolutePath;
             var method = context.Request.HttpMethod.ToUpper();
 
             IEnumerable<RHttpAction> dict;
+            HttpMethod hm = HttpMethod.GET;
             switch (method)
             {
                 case "GET":
-                    dict = _getActions;
+                    //dict = _getActions;
+                    hm = HttpMethod.GET;
                     break;
                 case "POST":
-                    dict = _postActions;
+                    //dict = _postActions;
+                    hm = HttpMethod.POST;
                     break;
                 case "PUT":
-                    dict = _putActions;
+                    //dict = _putActions;
+                    hm = HttpMethod.PUT;
                     break;
                 case "DELETE":
-                    dict = _deleteActions;
+                    //dict = _deleteActions;
+                    hm = HttpMethod.DELETE;
                     break;
                 default:
 #if DEBUG
@@ -314,21 +323,17 @@ namespace RHttpServer.Core
                     return;
             }
 
-            bool publicFileExists = false;
+            var generalFallback = false;
             var publicFile = !string.IsNullOrEmpty(PublicDir) ? Path.Combine(PublicDir, route.TrimStart('/')) : "";
-            var act = FindRouteAction(dict, route, publicFile, out publicFileExists);
-            if (act != null)
-            {
+            var act = _rtman.SearchInTree(route, hm, out generalFallback);
+            if (generalFallback && File.Exists(publicFile))
+                new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+            else if (act != null)
                 act.Action(new RRequest(context.Request, GetParams(act, route)), new RResponse(context.Response, _rPluginCollection));
-            }
             else
             {
-                if (publicFileExists) new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                else
-                {
-                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                    context.Response.Close();
-                }
+                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.Close();
             }
         }
 
@@ -349,7 +354,7 @@ namespace RHttpServer.Core
             var rTree = route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             var rSteps = rTree.Length;
             IList<IEnumerable<RHttpAction>> lister = new List<IEnumerable<RHttpAction>>();
-            int routeStep = 0;
+            var routeStep = 0;
             lister.Add(actions.Where(t => t.RouteLength <= rSteps && (rSteps == 0 || t.HasRouteStep(0, rTree[routeStep], "^", "*"))).ToList());
             if (!lister[0].Any())
             {
@@ -362,7 +367,7 @@ namespace RHttpServer.Core
                 lister.Add(lister[routeStep-1].Where(s => s.HasRouteStep(step, rTree[step], "^", "*")));
                 if (!lister[routeStep].Any()) break;
             }
-            IEnumerable<RHttpAction> list = lister[--routeStep];
+            var list = lister[--routeStep];
             if (list.All(s => s.RouteTree.Contains("*")) && File.Exists(publicFile))
             {
                 fileExists = true;
@@ -383,5 +388,141 @@ namespace RHttpServer.Core
             if (list.Any(t => t.RouteTree.SequenceEqual(action.RouteTree))) throw new RHttpServerException("Cannot add two actions to the same route");
             list.Add(action);
         }
+    }
+
+    internal class RouteTreeManager
+    {
+        private readonly RouteTree _getTree = new RouteTree("", null);
+        private readonly RouteTree _postTree = new RouteTree("", null);
+        private readonly RouteTree _putTree = new RouteTree("", null);
+        private readonly RouteTree _deleteTree = new RouteTree("", null);
+
+
+        internal bool AddRoute(RHttpAction action, HttpMethod method)
+        {
+            switch (method)
+            {
+                case HttpMethod.GET:
+                    return AddToTree(_getTree, action);
+                case HttpMethod.POST:
+                    return AddToTree(_postTree, action);
+                case HttpMethod.PUT:
+                    return AddToTree(_putTree, action);
+                case HttpMethod.DELETE:
+                    return AddToTree(_deleteTree, action);
+            }
+            return false;
+        }
+
+        private bool AddToTree(RouteTree tree, RHttpAction action)
+        {
+            var rTree = action.RouteTree;
+            var len = rTree.Length;
+            for (var i = 0; i < len; i++)
+            {
+                var ntree = tree.AddBranch(rTree[i]);
+                if (ntree == null) throw new RHttpServerException("Cannot add two actions to the same route");
+                tree = ntree;
+            }
+            if (tree.Action != null) throw new RHttpServerException("Cannot add two actions to the same route");
+            tree.Action = action;
+            return true;
+        }
+
+        internal RHttpAction SearchInTree(string route, HttpMethod meth, out bool generalFallback)
+        {
+            RouteTree tree = null, branch = null;
+            switch (meth)
+            {
+                case HttpMethod.GET:
+                    tree = _getTree;
+                    break;
+                case HttpMethod.POST:
+                    tree = _postTree;
+                    break;
+                case HttpMethod.PUT:
+                    tree = _putTree;
+                    break;
+                case HttpMethod.DELETE:
+                    tree = _deleteTree;
+                    break;
+            }
+
+            var split = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
+            var len = split.Length;
+            
+            for (var i = 0; i < len; i++)
+            {
+                branch = tree.GetBranch(split[i]);
+                if (branch != null) tree = branch;
+                else break;
+            }
+            if ((branch == null || tree.Action == null) && len != 0)
+            {
+                while (branch == null || branch.Route != "*" || tree.Action == null)
+                {
+                    branch = tree;
+                    if (branch.Stem == null) break;
+                    tree = branch.Stem;
+                }
+                generalFallback = true;
+                return tree?.General.Action;
+            }
+            generalFallback = tree?.Route == "*";
+            return tree?.Action;
+        }
+    }
+
+    internal enum HttpMethod
+    {
+        GET,
+        POST,
+        PUT,
+        DELETE
+    }
+
+    internal class RouteTree
+    {
+        internal RouteTree(string route, RouteTree stem)
+        {
+            Stem = stem;
+            Route = route;
+        }
+
+        internal RouteTree Stem { get; private set; }
+
+        internal Dictionary<string, RouteTree> Specific { get; } = new Dictionary<string, RouteTree>();
+        internal RouteTree Parameter { get; private set; }
+        internal RouteTree General { get; private set; }
+
+        internal RouteTree GetBranch(string route)
+        {
+            RouteTree rt = null;
+            Specific.TryGetValue(route, out rt);
+            return rt ?? (Parameter ?? General);
+        }
+
+        internal RouteTree AddBranch(string route)
+        {
+            if (route == "*")
+            {
+                if (General != null) return null;
+                General = new RouteTree(route, this);
+                return General;
+            }
+            if (route == "^")
+            {
+                if (Parameter != null) return null;
+                Parameter = new RouteTree(route, this);
+                return Parameter;
+            }
+            if (Specific.ContainsKey(route)) return null;
+            var nr = new RouteTree(route, this);
+            Specific.Add(route, nr);
+            return nr;
+        }
+
+        internal string Route { get; set; }
+        internal RHttpAction Action { get; set; }
     }
 }

@@ -5,12 +5,12 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RHttpServer.Core.Plugins.Default
+namespace RHttpServer.Plugins.Default
 {
     /// <summary>
     /// The default security handler
     /// </summary>
-    public sealed class SimpleHttpSecurityHandler : RPlugin, IHttpSecurityHandler
+    public sealed class SimpleServerProtection : RPlugin, IHttpSecurityHandler
     {
         private readonly ConcurrentDictionary<string, HttpRequester> _visitors = new ConcurrentDictionary<string, HttpRequester>();
         private readonly ConcurrentDictionary<string, byte> _blacklist = new ConcurrentDictionary<string, byte>();
@@ -19,7 +19,7 @@ namespace RHttpServer.Core.Plugins.Default
         private volatile bool _maintainerRunning;
         private bool _started;
 
-        internal SimpleHttpSecurityHandler()
+        internal SimpleServerProtection()
         {
             _visitorMaintainerThread = new Thread(MaintainVisitorList);
             _blacklistMaintainerThread = new Thread(MaintainBlacklist);

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
-using RHttpServer.Core.Plugins;
+using RHttpServer.Plugins;
 
 namespace RHttpServer.Core.Response
 {
@@ -128,7 +128,7 @@ namespace RHttpServer.Core.Response
                 UnderlyingResponse.ContentType = "text/plain";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
-                UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{RHttpServer.Version}");
+                UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.StatusCode = (int)status;
             }
             catch (Exception)

@@ -7,8 +7,8 @@
     <ProjectGuid>{DFED1F90-EF2C-44FD-A940-2F1AA9E64203}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RHttpServerCore</RootNamespace>
-    <AssemblyName>RHttpServerCore</AssemblyName>
+    <RootNamespace>RHttpServer</RootNamespace>
+    <AssemblyName>RHttpServer</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -52,20 +52,20 @@
     <Compile Include="Plugins\IHttpSecurityHandler.cs" />
     <Compile Include="Plugins\IHttpSecuritySettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Response\RenderParams.cs" />
-    <Compile Include="Request\RequestParams.cs" />
-    <Compile Include="RHttpAction.cs" />
-    <Compile Include="Plugins\Default\SimpleHttpSecurityHandler.cs" />
+    <Compile Include="Core\Response\RenderParams.cs" />
+    <Compile Include="Core\Request\RequestParams.cs" />
+    <Compile Include="Core\RHttpAction.cs" />
+    <Compile Include="Plugins\Default\SimpleServerProtection.cs" />
     <Compile Include="Plugins\Default\SimpleHttpSecuritySettings.cs" />
-    <Compile Include="RHttpServer.cs" />
-    <Compile Include="RHttpServerException.cs" />
+    <Compile Include="Core\HttpServer.cs" />
+    <Compile Include="Core\RHttpServerException.cs" />
     <Compile Include="Plugins\Default\ServiceStackJsonConverter.cs" />
     <Compile Include="Plugins\RPluginCollection.cs" />
-    <Compile Include="Request\RRequest.cs" />
-    <Compile Include="Response\RResponse.cs" />
+    <Compile Include="Core\Request\RRequest.cs" />
+    <Compile Include="Core\Response\RResponse.cs" />
     <Compile Include="Plugins\Default\HttpRequester.cs" />
-    <Compile Include="Request\RCookies.cs" />
-    <Compile Include="Request\RHeaders.cs" />
+    <Compile Include="Core\Request\RCookies.cs" />
+    <Compile Include="Core\Request\RHeaders.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using RHttpServer.Core.Plugins;
+using RHttpServer.Plugins;
 
 namespace RHttpServer.Core.Response
 {

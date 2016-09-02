@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Concurrent;
+using RHttpServer.Core;
 
-namespace RHttpServer.Core.Plugins
+namespace RHttpServer.Plugins
 {
     public class RPluginCollection
     {

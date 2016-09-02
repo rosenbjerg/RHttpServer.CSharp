@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using RHttpServer.Core;
 using RHttpServer.Core.Response;
 
-namespace RHttpServer.Core.Plugins.Default
+namespace RHttpServer.Plugins.Default
 {
     internal sealed class EcsPageRenderer : RPlugin, IPageRenderer
     {

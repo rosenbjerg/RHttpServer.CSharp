@@ -1,6 +1,6 @@
 using System;
 
-namespace RHttpServer.Core.Plugins.Default
+namespace RHttpServer.Plugins.Default
 {
     internal class HttpRequester
     {

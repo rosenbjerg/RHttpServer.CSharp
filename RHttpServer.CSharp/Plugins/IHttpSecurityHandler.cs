@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace RHttpServer.Core.Plugins
+namespace RHttpServer.Plugins
 {
     /// <summary>
     /// The interface that must be implemented for a class to be able to handle http security

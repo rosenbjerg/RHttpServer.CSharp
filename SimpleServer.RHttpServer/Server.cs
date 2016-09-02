@@ -1,13 +1,13 @@
 ﻿using System;
-using RHttpServer.Core.Plugins.Default;
+using RHttpServer.Plugins.Default;
 
-namespace SimpleServer.RHttpServer
+namespace SimpleRHttpServer
 {
     class Server
     {
         static void Main(string[] args)
         {
-            var server = new global::RHttpServer.Core.RHttpServer(3000, 3, "./public");
+            var server = new RHttpServer.Core.HttpServer(3000, 3, "./public");
 
             server.Get("/", (req, res) =>
             {
@@ -27,11 +27,11 @@ namespace SimpleServer.RHttpServer
                 res.RenderPage("./public/index.ecs", pars);
             });
 
-            server.Get("/:test", (req, res) =>
+            server.Get("/:test/:test2", (req, res) =>
             {
                 var pars = server.CreateRenderParams();
                 pars.Add("data1", req.Params["test"]);
-                pars.Add("data2", 42);
+                pars.Add("data2", req.Params["test2"]);
 
                 res.RenderPage("./public/index.ecs", pars);
             });
@@ -51,7 +51,6 @@ namespace SimpleServer.RHttpServer
             //server.AddPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
 
             server.Start(true);
-            Console.ReadKey();
         }
     }
 }
