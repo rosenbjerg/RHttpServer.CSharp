@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Plugins
+namespace RPlugin.RHttpServer
 {
     public interface IPageRenderer
     {

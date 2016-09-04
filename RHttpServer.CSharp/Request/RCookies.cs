@@ -1,19 +1,19 @@
 using System;
 using System.Net;
 
-namespace RHttpServer.Core.Request
+namespace RHttpServer.Request
 {
     /// <summary>
-    /// Ease-of-use wrapper for request cookies
+    ///     Ease-of-use wrapper for request cookies
     /// </summary>
     public class RCookies
     {
-        private readonly CookieCollection _cookies;
-
         internal RCookies(CookieCollection cocol)
         {
             _cookies = cocol;
         }
+
+        private readonly CookieCollection _cookies;
 
         public Cookie this[string ssId]
         {
@@ -30,7 +30,6 @@ namespace RHttpServer.Core.Request
 #endif
                     return null;
                 }
-
             }
         }
     }

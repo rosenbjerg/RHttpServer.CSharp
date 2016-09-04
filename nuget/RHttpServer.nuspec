@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>RHttpServer</id>
+    <version>1.0.1.4</version>
+    <title>RHS - RHttpServer</title>
+    <authors>Rosenbjerg Softworks</authors>
+    <owners>Rosenbjerg Softworks</owners>
+    <licenseUrl>https://www.gnu.org/licenses/gpl-3.0.txt</licenseUrl>
+    <projectUrl>https://github.com/rosenbjerg/RHttpServer.CSharp</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>
+RHttpServer is a simple server framework for creating powerful http servers for websites or APIs in a very simple manner
+	</description>
+	<summary>
+RHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with express.
+A simple plugin for dynamic page rendering is included, which offers the ability to embed dynamically created content in the html file, even js objects, and supports page caching for improved performance.
+The framework also includes a simple security plugin which offers some protection against simple (D)DOS attacks.
+See project page for more information.
+	</summary>
+    <releaseNotes>First release</releaseNotes>
+    <copyright>Copyright 2016</copyright>
+    <tags>RHttpServer rhs http server api rendering </tags>
+  <dependencies>
+  <group targetFramework="net452">
+		<dependency id="ServiceStack.Text" version="4.5.0" />
+	</group>
+</dependencies>
+  </metadata>
+  <files>
+    <file src="bin\RHttpServer.dll" target="lib\Net40" />
+    <file src="bin\RHttpServer.xml" target="lib" />
+  </files>
+</package>

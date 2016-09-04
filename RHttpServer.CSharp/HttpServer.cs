@@ -7,116 +7,29 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
-using RHttpServer.Core.Request;
-using RHttpServer.Core.Response;
 using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
+using RHttpServer.Request;
+using RHttpServer.Response;
+using RPlugin.RHttpServer;
+using IHttpSecurityHandler = RHttpServer.Plugins.IHttpSecurityHandler;
+using IJsonConverter = RHttpServer.Plugins.IJsonConverter;
+using IPageRenderer = RHttpServer.Plugins.IPageRenderer;
+using RPluginCollection = RHttpServer.Plugins.RPluginCollection;
 
-namespace RHttpServer.Core
+namespace RHttpServer
 {
     /// <summary>
-    /// Represents a HTTP server that can be configured before starting
+    ///     Represents a HTTP server that can be configured before starting
     /// </summary>
     public class HttpServer : IDisposable
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
 
-        private readonly HttpListener _listener;
-        private readonly Thread _listenerThread;
-        private readonly Thread[] _workers;
-        private readonly ManualResetEventSlim _stop, _ready;
-        private readonly ConcurrentQueue<HttpListenerContext> _queue;
-        private readonly RPluginCollection _rPluginCollection = new RPluginCollection();
-        private readonly RouteTreeManager _rtman = new RouteTreeManager();
-        private bool _defPluginsReady;
-        private bool _securityOn;
-
         /// <summary>
-        /// The publicly available folder
-        /// </summary>
-        public string PublicDir { get; }
-
-        /// <summary>
-        /// The current port in use
-        /// </summary>
-        public int Port { get; }
-
-        /// <summary>
-        /// Whether the security is turned on.
-        /// Set using SetSecuritySettings(..)
-        /// </summary>
-        public bool SecurityOn
-        {
-            get { return _securityOn; }
-            set
-            {
-                if (_securityOn == value) return;
-                _securityOn = value;
-                if (_securityOn)
-                {
-                    _rPluginCollection.Use<IHttpSecurityHandler>().Start();
-                }
-                else
-                {
-                    _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Register a plugin to be used in the server
-        /// </summary>
-        /// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
-        /// <typeparam name="TPlugin">The type of the plugin instance</typeparam>
-        /// <param name="plugin">The instance of the plugin that will be registered</param>
-        public void AddPlugin<TPluginInterface, TPlugin>(TPlugin plugin)
-            where TPlugin : RPlugin, TPluginInterface
-        {
-            plugin.SetPlugins(_rPluginCollection);
-            _rPluginCollection.Add(typeof(TPluginInterface), plugin);
-        }
-
-        ///// <summary>
-        ///// Returns the registered instance of a plugin
-        ///// </summary>
-        ///// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
-        ///// <param name="key">The interface the plugin instance is registered to and implements</param>
-        ///// <returns>The instance of the registered plugin</returns>
-        //public TPluginInterface GetPlugin<TPluginInterface>() => _rPluginCollection.Use<TPluginInterface>();
-
-        /// <summary>
-        /// Add action to handle GET requests to a given route
-        /// </summary>
-        /// <param name="route">The route to respond to</param>
-        /// <param name="action">The action that wil respond to the request</param>
-        public void Get(string route, Action<RRequest, RResponse> action) => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.GET);
-
-        /// <summary>
-        /// Add action to handle POST requests to a given route
-        /// </summary>
-        /// <param name="route">The route to respond to</param>
-        /// <param name="action">The action that wil respond to the request</param>
-        public void Post(string route, Action<RRequest, RResponse> action) => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.POST);
-
-        /// <summary>
-        /// Add action to handle PUT requests to a given route
-        /// </summary>
-        /// <param name="route">The route to respond to</param>
-        /// <param name="action">The action that wil respond to the request</param>
-        public void Put(string route, Action<RRequest, RResponse> action) => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.PUT);
-
-        /// <summary>
-        /// Add action to handle DELETE requests to a given route
-        /// </summary>
-        /// <param name="route">The route to respond to</param>
-        /// <param name="action">The action that wil respond to the request</param>
-        public void Delete(string route, Action<RRequest, RResponse> action) => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
-
-
-        /// <summary>
-        /// Constructs and starts a server with given port and using the given path as public folder.
-        /// Set path to null or empty string if none wanted
+        ///     Constructs and starts a server with given port and using the given path as public folder.
+        ///     Set path to null or empty string if none wanted
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="port">Port of the server.</param>
@@ -142,8 +55,8 @@ namespace RHttpServer.Core
         }
 
         /// <summary>
-        /// Constructs and starts a server with automatically found port and using the given path as public folder.
-        /// Set path to null or empty string if none wanted
+        ///     Constructs and starts a server with automatically found port and using the given path as public folder.
+        ///     Set path to null or empty string if none wanted
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
@@ -155,7 +68,7 @@ namespace RHttpServer.Core
             //get an empty port
             var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
-            Port = ((IPEndPoint)l.LocalEndpoint).Port;
+            Port = ((IPEndPoint) l.LocalEndpoint).Port;
             l.Stop();
             if (path.StartsWith("./")) path = Path.Combine(Environment.CurrentDirectory, path.Replace("./", ""));
             PublicDir = path;
@@ -166,14 +79,109 @@ namespace RHttpServer.Core
             _listener = new HttpListener();
             _listenerThread = new Thread(HandleRequests);
         }
-        
+
+
+        private readonly HttpListener _listener;
+        private readonly Thread _listenerThread;
+        private readonly ConcurrentQueue<HttpListenerContext> _queue;
+        private readonly RPluginCollection _rPluginCollection = new RPluginCollection();
+        private readonly RouteTreeManager _rtman = new RouteTreeManager();
+        private readonly ManualResetEventSlim _stop, _ready;
+        private readonly Thread[] _workers;
+        private bool _defPluginsReady;
+        private bool _securityOn;
 
         /// <summary>
-        /// Starts the server on a separate thread
+        ///     The publicly available folder
+        /// </summary>
+        public string PublicDir { get; }
+
+        /// <summary>
+        ///     The current port in use
+        /// </summary>
+        public int Port { get; }
+
+        /// <summary>
+        ///     Whether the security is turned on.
+        ///     Set using SetSecuritySettings(..)
+        /// </summary>
+        public bool SecurityOn
+        {
+            get { return _securityOn; }
+            set
+            {
+                if (_securityOn == value) return;
+                _securityOn = value;
+                if (_securityOn)
+                {
+                    _rPluginCollection.Use<IHttpSecurityHandler>().Start();
+                }
+                else
+                {
+                    _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
+                }
+            }
+        }
+
+        /// <summary>
+        ///     Register a plugin to be used in the server
+        /// </summary>
+        /// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
+        /// <typeparam name="TPlugin">The type of the plugin instance</typeparam>
+        /// <param name="plugin">The instance of the plugin that will be registered</param>
+        public void RegisterPlugin<TPluginInterface, TPlugin>(TPlugin plugin)
+            where TPlugin : RPlugin, TPluginInterface
+        {
+            plugin.SetPlugins(_rPluginCollection);
+            _rPluginCollection.Add(typeof(TPluginInterface), plugin);
+        }
+
+        ///// <summary>
+        ///// Returns the registered instance of a plugin
+        ///// </summary>
+        ///// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
+        ///// <param name="key">The interface the plugin instance is registered to and implements</param>
+        ///// <returns>The instance of the registered plugin</returns>
+        //public TPluginInterface GetPlugin<TPluginInterface>() => _rPluginCollection.Use<TPluginInterface>();
+
+        /// <summary>
+        ///     Add action to handle GET requests to a given route
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the request</param>
+        public void Get(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.GET);
+
+        /// <summary>
+        ///     Add action to handle POST requests to a given route
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the request</param>
+        public void Post(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.POST);
+
+        /// <summary>
+        ///     Add action to handle PUT requests to a given route
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the request</param>
+        public void Put(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.PUT);
+
+        /// <summary>
+        ///     Add action to handle DELETE requests to a given route
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the request</param>
+        public void Delete(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
+
+
+        /// <summary>
+        ///     Starts the server on a separate thread
         /// </summary>
         public void Start(bool localOnly = false)
         {
-
             InitializeDefaultPlugins();
             _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "+")}:{Port}/");
             _listener.Start();
@@ -189,18 +197,20 @@ namespace RHttpServer.Core
             if (localOnly) Console.WriteLine("Listening on localhost only");
 #endif
         }
-        
-        public void Dispose() { Stop(); }
 
         /// <summary>
-        /// Initializes any default plugin if no other plugin is registered to same interface
+        ///     Initializes any default plugin if no other plugin is registered to same interface
         /// </summary>
-        public void InitializeDefaultPlugins(bool renderCaching = true, bool securityOn = false, SimpleHttpSecuritySettings securitySettings = null)
+        public void InitializeDefaultPlugins(bool renderCaching = true, bool securityOn = false,
+            SimpleHttpSecuritySettings securitySettings = null)
         {
             if (_defPluginsReady) return;
-            if (!_rPluginCollection.IsRegistered<IJsonConverter>()) AddPlugin<IJsonConverter, ServiceStackJsonConverter>(new ServiceStackJsonConverter());
-            if (!_rPluginCollection.IsRegistered<IPageRenderer>()) AddPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
-            if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>()) AddPlugin<IHttpSecurityHandler, SimpleServerProtection>(new SimpleServerProtection());
+            if (!_rPluginCollection.IsRegistered<IJsonConverter>())
+                RegisterPlugin<IJsonConverter, ServiceStackJsonConverter>(new ServiceStackJsonConverter());
+            if (!_rPluginCollection.IsRegistered<IPageRenderer>())
+                RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
+            if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>())
+                RegisterPlugin<IHttpSecurityHandler, SimpleServerProtection>(new SimpleServerProtection());
             _defPluginsReady = true;
             if (securitySettings == null) securitySettings = new SimpleHttpSecuritySettings();
             _rPluginCollection.Use<IHttpSecurityHandler>().Settings = securitySettings;
@@ -209,7 +219,7 @@ namespace RHttpServer.Core
         }
 
         /// <summary>
-        /// Stops the server thread and all worker threads.
+        ///     Stops the server thread and all worker threads.
         /// </summary>
         public void Stop()
         {
@@ -217,12 +227,12 @@ namespace RHttpServer.Core
             _stop.Set();
             _listenerThread.Join();
             foreach (var worker in _workers)
-                worker.Join();
+                worker.Join(100);
             _listener.Stop();
         }
 
         /// <summary>
-        /// Method to get a new RenderParams object
+        ///     Method to get a new RenderParams object
         /// </summary>
         /// <returns>A new RenderParams instance with access</returns>
         public RenderParams CreateRenderParams()
@@ -240,7 +250,7 @@ namespace RHttpServer.Core
                 {
                     var context = _listener.BeginGetContext(ContextReady, null);
 
-                    if (0 == WaitHandle.WaitAny(new[] { _stop.WaitHandle, context.AsyncWaitHandle }))
+                    if (0 == WaitHandle.WaitAny(new[] {_stop.WaitHandle, context.AsyncWaitHandle}))
                         return;
                 }
             }
@@ -269,7 +279,7 @@ namespace RHttpServer.Core
 
         private void Worker()
         {
-            WaitHandle[] wait = { _ready.WaitHandle, _stop.WaitHandle };
+            WaitHandle[] wait = {_ready.WaitHandle, _stop.WaitHandle};
             while (0 == WaitHandle.WaitAny(wait))
             {
                 HttpListenerContext context;
@@ -278,15 +288,25 @@ namespace RHttpServer.Core
                     _ready.Reset();
                     continue;
                 }
-                if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request)) Process(context);
+                try
+                {
+                    if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request))
+                        Process(context);
+                }
+                catch (Exception ex)
+                {
+#if DEBUG
+                    Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
+#endif
+                }
             }
         }
-     
+
         private void Process(HttpListenerContext context)
         {
             var route = context.Request.Url.AbsolutePath;
             var method = context.Request.HttpMethod.ToUpper();
-            
+
             HttpMethod hm;
             switch (method)
             {
@@ -306,7 +326,7 @@ namespace RHttpServer.Core
 #if DEBUG
                     Console.WriteLine($"Invalid HTTP method: {method} from {context.Request.LocalEndPoint}");
 #endif
-                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                    context.Response.StatusCode = (int) HttpStatusCode.NotFound;
                     context.Response.Close();
                     return;
             }
@@ -317,24 +337,28 @@ namespace RHttpServer.Core
             if (generalFallback && File.Exists(publicFile))
                 new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
             else if (act != null)
-                act.Action(new RRequest(context.Request, GetParams(act, route)), new RResponse(context.Response, _rPluginCollection));
+                act.Action(new RRequest(context.Request, GetParams(act, route)),
+                    new RResponse(context.Response, _rPluginCollection));
             else
             {
-                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.StatusCode = (int) HttpStatusCode.NotFound;
                 context.Response.Close();
             }
         }
 
         private static RequestParams GetParams(RHttpAction act, string route)
         {
-            var rTree = route.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var rTree = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
             var rLen = rTree.Length;
-            var dict = new Dictionary<string, string>();
-            foreach (var keyValuePair in act.Params)
-            {
-                if (keyValuePair.Key < rLen) dict.Add(keyValuePair.Value, rTree[keyValuePair.Key]);
-            }
+            var dict = act.Params
+                .Where(kvp => kvp.Key < rLen)
+                .ToDictionary(kvp => kvp.Value, kvp => rTree[kvp.Key]);
             return new RequestParams(dict);
+        }
+
+        public void Dispose()
+        {
+            Stop();
         }
     }
 }

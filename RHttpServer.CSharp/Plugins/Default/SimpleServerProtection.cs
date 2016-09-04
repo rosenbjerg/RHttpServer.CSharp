@@ -8,21 +8,60 @@ using System.Threading.Tasks;
 namespace RHttpServer.Plugins.Default
 {
     /// <summary>
-    /// The default security handler
+    ///     The default security handler
     /// </summary>
     public sealed class SimpleServerProtection : RPlugin, IHttpSecurityHandler
     {
-        private readonly ConcurrentDictionary<string, HttpRequester> _visitors = new ConcurrentDictionary<string, HttpRequester>();
-        private readonly ConcurrentDictionary<string, byte> _blacklist = new ConcurrentDictionary<string, byte>();
-        private readonly Thread _visitorMaintainerThread;
-        private readonly Thread _blacklistMaintainerThread;
-        private volatile bool _maintainerRunning;
-        private bool _started;
-
         internal SimpleServerProtection()
         {
             _visitorMaintainerThread = new Thread(MaintainVisitorList);
             _blacklistMaintainerThread = new Thread(MaintainBlacklist);
+        }
+
+        private readonly ConcurrentDictionary<string, byte> _blacklist = new ConcurrentDictionary<string, byte>();
+        private readonly Thread _blacklistMaintainerThread;
+        private readonly Thread _visitorMaintainerThread;
+
+        private readonly ConcurrentDictionary<string, HttpRequester> _visitors =
+            new ConcurrentDictionary<string, HttpRequester>();
+
+        private volatile bool _maintainerRunning;
+        private bool _started;
+
+        private async void MaintainVisitorList()
+        {
+            while (_maintainerRunning)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(Settings.SessionLengthSeconds/2.0));
+                var now = DateTime.Now;
+                var olds =
+                    _visitors.Where(
+                        t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
+                        .Select(t => t.Key);
+                foreach (var ipAddress in olds)
+                {
+                    HttpRequester vis = null;
+                    _visitors.TryRemove(ipAddress, out vis);
+                }
+            }
+        }
+
+        private async void MaintainBlacklist()
+        {
+            while (_maintainerRunning)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(Settings.BanTimeMinutes/2.0));
+                var now = DateTime.Now;
+                var olds =
+                    _visitors.Where(
+                        t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
+                        .Select(t => t.Key);
+                foreach (var ipAddress in olds)
+                {
+                    HttpRequester vis = null;
+                    _visitors.TryRemove(ipAddress, out vis);
+                }
+            }
         }
 
         public bool HandleRequest(HttpListenerRequest req)
@@ -55,36 +94,6 @@ namespace RHttpServer.Plugins.Default
             _visitorMaintainerThread.Start();
             _blacklistMaintainerThread.Start();
             _started = true;
-        }
-
-        private async void MaintainVisitorList()
-        {
-            while (_maintainerRunning)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(Settings.SessionLengthSeconds/2.0));
-                var now = DateTime.Now;
-                var olds = _visitors.Where(t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds).Select(t => t.Key);
-                foreach (var ipAddress in olds)
-                {
-                    HttpRequester vis = null;
-                    _visitors.TryRemove(ipAddress, out vis);
-                }
-            }
-        }
-
-        private async void MaintainBlacklist()
-        {
-            while (_maintainerRunning)
-            {
-                await Task.Delay(TimeSpan.FromMinutes(Settings.BanTimeMinutes/2.0));
-                var now = DateTime.Now;
-                var olds = _visitors.Where(t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds).Select(t => t.Key);
-                foreach (var ipAddress in olds)
-                {
-                    HttpRequester vis = null;
-                    _visitors.TryRemove(ipAddress, out vis);
-                }
-            }
         }
 
         public void Stop()

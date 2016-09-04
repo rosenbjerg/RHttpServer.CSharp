@@ -1,4 +1,4 @@
-namespace RHttpServer.Plugins
+namespace RPlugin.RHttpServer
 {
     /// <summary>
     ///     Abstract class that all pluginCollection must derive from

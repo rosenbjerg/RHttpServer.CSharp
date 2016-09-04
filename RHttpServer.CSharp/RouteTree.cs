@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Core
+namespace RHttpServer
 {
     internal class RouteTree
     {
@@ -15,6 +15,9 @@ namespace RHttpServer.Core
         internal Dictionary<string, RouteTree> Specific { get; } = new Dictionary<string, RouteTree>();
         internal RouteTree Parameter { get; private set; }
         internal RouteTree General { get; private set; }
+
+        internal string Route { get; set; }
+        internal RHttpAction Action { get; set; }
 
         internal RouteTree GetBranch(string route)
         {
@@ -41,8 +44,5 @@ namespace RHttpServer.Core
                     return nr;
             }
         }
-
-        internal string Route { get; set; }
-        internal RHttpAction Action { get; set; }
     }
 }

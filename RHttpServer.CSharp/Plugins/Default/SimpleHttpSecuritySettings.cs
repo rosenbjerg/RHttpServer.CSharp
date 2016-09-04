@@ -1,7 +1,9 @@
-﻿namespace RHttpServer.Plugins.Default
+﻿using RPlugin.RHttpServer;
+
+namespace RHttpServer.Plugins.Default
 {
     /// <summary>
-    /// The default security settings
+    ///     The default security settings
     /// </summary>
     public sealed class SimpleHttpSecuritySettings : IHttpSecuritySettings
     {

@@ -1,4 +1,4 @@
-namespace RHttpServer.Core
+namespace RHttpServer
 {
     internal enum HttpMethod
     {

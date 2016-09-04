@@ -10,11 +10,14 @@ namespace RHttpServer.Plugins.Default
             SessionStarted = DateTime.Now;
         }
 
+        private readonly object _lock = new object();
+
         public DateTime SessionStarted { get; }
 
         public int RequestsInSession { get; private set; }
-        
-        private readonly object _lock = new object();
+
+        public DateTime LatestVisit { get; private set; }
+
         public int JustRequested()
         {
             lock (_lock)
@@ -24,7 +27,5 @@ namespace RHttpServer.Plugins.Default
             LatestVisit = DateTime.Now;
             return RequestsInSession;
         }
-
-        public DateTime LatestVisit { get; private set; }
     }
 }

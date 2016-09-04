@@ -1,20 +1,21 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Core.Request
+namespace RHttpServer.Request
 {
     /// <summary>
-    /// Object containing parameters for a request
+    ///     Object containing parameters for a request
     /// </summary>
     public class RequestParams
     {
-        private readonly Dictionary<string, string> _dict;
-
         internal RequestParams(Dictionary<string, string> dict)
         {
             _dict = dict;
         }
+
+        private readonly Dictionary<string, string> _dict;
+
         /// <summary>
-        /// Get the request data fora given parameter
+        ///     Get the request data fora given parameter
         /// </summary>
         /// <param name="paramId"></param>
         /// <returns></returns>
@@ -23,7 +24,7 @@ namespace RHttpServer.Core.Request
             get
             {
                 if (_dict == null) return "";
-                string v = "";
+                var v = "";
                 _dict.TryGetValue(paramId, out v);
                 return v;
             }

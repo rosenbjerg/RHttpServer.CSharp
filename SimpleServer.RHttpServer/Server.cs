@@ -1,24 +1,18 @@
-﻿using System;
+﻿using RHttpServer;
+using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
 
 namespace SimpleRHttpServer
 {
-    class Server
+    internal class Server
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            // TODO Add render cache
-            var server = new RHttpServer.Core.HttpServer(3000, 3, "./public");
+            var server = new HttpServer(3000, 3, "./public");
 
-            server.Get("/", (req, res) =>
-            {
-                res.SendString("ok");
-            });
+            server.Get("/", (req, res) => { res.SendString("ok"); });
 
-            server.Get("/file", (req, res) =>
-            {
-                res.SendFile("./public/index.html");
-            });
+            server.Get("/file", (req, res) => { res.SendFile("./public/index.html"); });
 
             server.Get("/render", (req, res) =>
             {
@@ -56,19 +50,13 @@ namespace SimpleRHttpServer
                 res.RenderPage("./public/index.ecs", pars);
             });
 
-            server.Get("/404", (req, res) =>
-            {
-                res.SendString("404");
-            });
+            server.Get("/404", (req, res) => { res.SendString("404"); });
 
-            server.Get("/*", (req, res) =>
-            {
-                res.Redirect("/404");
-            });
+            server.Get("/*", (req, res) => { res.Redirect("/404"); });
 
 
             server.InitializeDefaultPlugins(securitySettings: new SimpleHttpSecuritySettings(2, 20000));
-            //server.AddPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
+            //server.RegisterPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
 
             server.Start(true);
         }

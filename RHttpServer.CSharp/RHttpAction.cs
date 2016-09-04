@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using RHttpServer.Core.Request;
-using RHttpServer.Core.Response;
+using RHttpServer.Request;
+using RHttpServer.Response;
 
-namespace RHttpServer.Core
+namespace RHttpServer
 {
     public class RHttpAction
     {
@@ -13,7 +13,7 @@ namespace RHttpServer.Core
             RouteLength = RouteTree.Length;
 
             Action = action;
-            for (int i = 0; i < RouteTree.Length; i++)
+            for (var i = 0; i < RouteTree.Length; i++)
             {
                 var s = RouteTree[i];
                 if (!s.StartsWith(":")) continue;
@@ -22,12 +22,12 @@ namespace RHttpServer.Core
             }
         }
 
+        public readonly string[] RouteTree;
+
         public List<KeyValuePair<int, string>> Params { get; } = new List<KeyValuePair<int, string>>();
 
         public Action<RRequest, RResponse> Action { get; }
         public int RouteLength { get; }
-
-        public readonly string[] RouteTree;
 
         public bool HasRouteStep(int step, params string[] route)
         {

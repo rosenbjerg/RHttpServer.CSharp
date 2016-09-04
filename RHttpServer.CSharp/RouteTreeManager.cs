@@ -1,13 +1,14 @@
 using System;
+using RPlugin.RHttpServer;
 
-namespace RHttpServer.Core
+namespace RHttpServer
 {
     internal class RouteTreeManager
     {
+        private readonly RouteTree _deleteTree = new RouteTree("", null);
         private readonly RouteTree _getTree = new RouteTree("", null);
         private readonly RouteTree _postTree = new RouteTree("", null);
         private readonly RouteTree _putTree = new RouteTree("", null);
-        private readonly RouteTree _deleteTree = new RouteTree("", null);
 
 
         internal bool AddRoute(RHttpAction action, HttpMethod method)
@@ -61,7 +62,7 @@ namespace RHttpServer.Core
 
             var split = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
             var len = split.Length;
-            
+
             for (var i = 0; i < len; i++)
             {
                 branch = tree.GetBranch(split[i]);
