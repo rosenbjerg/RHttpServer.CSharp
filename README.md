@@ -10,7 +10,7 @@ The tool automatically downloads all missing nuget dependencies, if a packages.c
 
 You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb-installer)
 
-You will need to have the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) installed if using Linux or Mac OSX
+You will still need to have the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) installed if using Linux or Mac OSX
 
 
 ### Example
