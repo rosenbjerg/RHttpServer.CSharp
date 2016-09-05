@@ -4,9 +4,10 @@ A C# alternative to nodejs and similar server bundles
 
 Some of the use patterns has been inspired by nodejs and expressjs
 
-I have created a simple tool (rhsb) that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
+### RHttpServerBuilder (rhsb)
+I have created a simple tool that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
 
-The tool can automatically download all missing nuget dependencies, if a packages.config is provided in the same folder as the source files
+The tool will automatically download all missing nuget dependencies, if a packages.config file is provided in the same folder as the source files
 
 rhsb can also be used to start the server in the background, and later-on, stop it again
 
@@ -74,7 +75,7 @@ so that it could be replaced later, the tag would look like this: <%foo%>.
 - The format is inspired by the ejs format, though you cannot embed JavaScript or C# for that matter, in the pages.
 This was chosen because i did NOT like the idea behind it.
 
-Send your dynamic content as RenderParams instead of embedding the code for generation of the content in the html. Please, separation of concerns.
+Embed your dynamic content using RenderParams instead of embedding the code for generation of the content in the html. Please, separation of concerns.
 
 
 ## Why?
