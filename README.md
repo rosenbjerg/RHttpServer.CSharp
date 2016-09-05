@@ -4,13 +4,15 @@ A C# alternative to nodejs and similar server bundles
 
 Some of the use patterns has been inspired by nodejs and expressjs
 
-I have created a simple tool that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
+I have created a simple tool (rhsb) that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
 
-The tool automatically downloads all missing nuget dependencies, if a packages.config is provided in the same folder as the source files
+The tool can automatically download all missing nuget dependencies, if a packages.config is provided in the same folder as the source files
+
+rhsb can also be used to start the server in the background, and later-on, stop it again
 
 You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb-installer)
 
-You will still need to have the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) installed if using Linux or Mac OSX
+The tool requires the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) to be installed if using Linux or Mac OSX
 
 
 ### Example
