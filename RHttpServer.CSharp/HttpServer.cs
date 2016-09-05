@@ -11,11 +11,6 @@ using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
 using RHttpServer.Request;
 using RHttpServer.Response;
-using RPlugin.RHttpServer;
-using IHttpSecurityHandler = RHttpServer.Plugins.IHttpSecurityHandler;
-using IJsonConverter = RHttpServer.Plugins.IJsonConverter;
-using IPageRenderer = RHttpServer.Plugins.IPageRenderer;
-using RPluginCollection = RHttpServer.Plugins.RPluginCollection;
 
 namespace RHttpServer
 {
@@ -254,7 +249,7 @@ namespace RHttpServer
                         return;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
 #if DEBUG
                 Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
@@ -269,7 +264,7 @@ namespace RHttpServer
                 _queue.Enqueue(_listener.EndGetContext(ar));
                 _ready.Set();
             }
-            catch (HttpListenerException ex)
+            catch (Exception)
             {
 #if DEBUG
                 Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
@@ -293,7 +288,7 @@ namespace RHttpServer
                     if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request))
                         Process(context);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
 #if DEBUG
                     Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
@@ -332,7 +327,7 @@ namespace RHttpServer
             }
 
             bool generalFallback;
-            var publicFile = !string.IsNullOrEmpty(PublicDir) ? Path.Combine(PublicDir, route.TrimStart('/')) : "";
+            var publicFile = !string.IsNullOrEmpty(PublicDir) && !route.TrimStart('/').Contains("/") ? Path.Combine(PublicDir, route.TrimStart('/')) : "";
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
             if (generalFallback && File.Exists(publicFile))
                 new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);

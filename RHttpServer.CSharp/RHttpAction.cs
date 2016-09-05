@@ -5,7 +5,7 @@ using RHttpServer.Response;
 
 namespace RHttpServer
 {
-    public class RHttpAction
+    internal class RHttpAction
     {
         internal RHttpAction(string route, Action<RRequest, RResponse> action)
         {
@@ -22,14 +22,14 @@ namespace RHttpServer
             }
         }
 
-        public readonly string[] RouteTree;
+        internal readonly string[] RouteTree;
 
-        public List<KeyValuePair<int, string>> Params { get; } = new List<KeyValuePair<int, string>>();
+        internal List<KeyValuePair<int, string>> Params { get; } = new List<KeyValuePair<int, string>>();
 
-        public Action<RRequest, RResponse> Action { get; }
-        public int RouteLength { get; }
+        internal Action<RRequest, RResponse> Action { get; }
+        internal int RouteLength { get; }
 
-        public bool HasRouteStep(int step, params string[] route)
+        internal bool HasRouteStep(int step, params string[] route)
         {
             if (step > RouteLength - 1) return false;
             var rs = RouteTree[step];

@@ -1,11 +1,9 @@
-﻿using RPlugin.RHttpServer;
-
-namespace RHttpServer.Plugins.Default
+﻿namespace RHttpServer.Plugins.Default
 {
     /// <summary>
     ///     The default security settings
     /// </summary>
-    public sealed class SimpleHttpSecuritySettings : IHttpSecuritySettings
+    public sealed class SimpleHttpSecuritySettings : RPlugin, IHttpSecuritySettings
     {
         public SimpleHttpSecuritySettings(int sessLenSec = 600, int maxReqsPrSess = 1000, int banTimeMin = 60)
         {

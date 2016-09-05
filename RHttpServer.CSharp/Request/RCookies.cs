@@ -15,13 +15,17 @@ namespace RHttpServer.Request
 
         private readonly CookieCollection _cookies;
 
-        public Cookie this[string ssId]
+        /// <summary>
+        /// Returns the cookie with the given id if any
+        /// </summary>
+        /// <param name="cookieId"></param>
+        public Cookie this[string cookieId]
         {
             get
             {
                 try
                 {
-                    return _cookies[ssId];
+                    return _cookies[cookieId];
                 }
                 catch (Exception e)
                 {

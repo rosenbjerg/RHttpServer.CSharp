@@ -4,10 +4,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using RHttpServer.Plugins;
-using RPlugin.RHttpServer;
-using IJsonConverter = RHttpServer.Plugins.IJsonConverter;
-using IPageRenderer = RHttpServer.Plugins.IPageRenderer;
-using RPluginCollection = RHttpServer.Plugins.RPluginCollection;
 
 namespace RHttpServer.Response
 {
@@ -94,8 +90,14 @@ namespace RHttpServer.Response
             Plugins = rPluginCollection;
         }
 
+        /// <summary>
+        /// Whether this response has been closed
+        /// </summary>
         protected bool Closed;
 
+        /// <summary>
+        /// The plugins registered to the server
+        /// </summary>
         public RPluginCollection Plugins { get; }
 
 
@@ -105,6 +107,11 @@ namespace RHttpServer.Response
         /// </summary>
         public HttpListenerResponse UnderlyingResponse { get; }
 
+        /// <summary>
+        /// Add header item to response
+        /// </summary>
+        /// <param name="fieldName"></param>
+        /// <param name="fieldValue"></param>
         public void AddHeader(string fieldName, string fieldValue)
         {
             UnderlyingResponse.AddHeader(fieldName, fieldValue);
@@ -128,9 +135,9 @@ namespace RHttpServer.Response
         public void SendString(string data, HttpStatusCode status = HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
-            var bytes = Encoding.UTF8.GetBytes(data);
             try
             {
+                var bytes = Encoding.UTF8.GetBytes(data);
                 UnderlyingResponse.ContentType = "text/plain";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
@@ -140,6 +147,9 @@ namespace RHttpServer.Response
             catch (Exception)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+#if DEBUG
+                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
+#endif
             }
             finally
             {
@@ -157,17 +167,21 @@ namespace RHttpServer.Response
         public void SendJson(object data, HttpStatusCode status = HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
-            var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
             try
             {
+                var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
                 UnderlyingResponse.ContentType = "application/json";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.StatusCode = (int) status;
             }
             catch (Exception)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+#if DEBUG
+                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
+#endif
             }
             finally
             {
@@ -185,17 +199,17 @@ namespace RHttpServer.Response
         /// <param name="status">The status code for the response</param>
         public void SendFile(string filepath, string mime = null, HttpStatusCode status = HttpStatusCode.OK)
         {
-            if (Closed) throw new RHttpServerException("You can only send the response once");
-            using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            if (Closed) throw new RHttpServerException("You can only send the response once"); try
             {
-                try
+                if (mime == null)
+                    UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
+                        ? mime
+                        : "application/octet-stream";
+                using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    if (mime == null)
-                        UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
-                            ? mime
-                            : "application/octet-stream";
                     var len = input.Length;
                     UnderlyingResponse.ContentLength64 = len;
+                    UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{HttpServer.Version}");
                     UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
                     UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
                     UnderlyingResponse.AddHeader("Content-disposition", "inline; filename=" + Path.GetFileName(filepath));
@@ -205,21 +219,25 @@ namespace RHttpServer.Response
                     while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
                         UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
                     input.Close();
-
-                    UnderlyingResponse.StatusCode = (int) status;
-                    UnderlyingResponse.OutputStream.Flush();
                 }
-                catch (Exception)
-                {
-                    UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                }
-                finally
-                {
-                    UnderlyingResponse.OutputStream.Close();
-                    UnderlyingResponse.Close();
-                    Closed = true;
-                }
+                
+                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.OutputStream.Flush();
             }
+            catch (Exception)
+            {
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+#if DEBUG
+                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
+#endif
+            }
+            finally
+            {
+                UnderlyingResponse.OutputStream.Close();
+                UnderlyingResponse.Close();
+                Closed = true;
+            }
+            
         }
 
         /// <summary>
@@ -231,16 +249,17 @@ namespace RHttpServer.Response
         public void Download(string filepath, string mime = null, HttpStatusCode status = HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
-            using (var input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            try
             {
-                try
+                if (mime == null)
+                    UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
+                        ? mime
+                        : "application/octet-stream";
+                using (var input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    if (mime == null)
-                        UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
-                            ? mime
-                            : "application/octet-stream";
                     var len = input.Length;
                     UnderlyingResponse.ContentLength64 = len;
+                    UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{HttpServer.Version}");
                     UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
                     UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
                     UnderlyingResponse.AddHeader("Content-disposition",
@@ -251,21 +270,25 @@ namespace RHttpServer.Response
                     while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
                         UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
                     input.Close();
-
-                    UnderlyingResponse.StatusCode = (int) status;
-                    UnderlyingResponse.OutputStream.Flush();
                 }
-                catch (Exception)
-                {
-                    UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                }
-                finally
-                {
-                    UnderlyingResponse.OutputStream.Close();
-                    UnderlyingResponse.Close();
-                    Closed = true;
-                }
+                
+                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.OutputStream.Flush();
             }
+            catch (Exception)
+            {
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+#if DEBUG
+                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
+#endif
+            }
+            finally
+            {
+                UnderlyingResponse.OutputStream.Close();
+                UnderlyingResponse.Close();
+                Closed = true;
+            }
+            
         }
 
         /// <summary>
@@ -277,18 +300,22 @@ namespace RHttpServer.Response
         public void RenderPage(string pagefilepath, RenderParams parameters, HttpStatusCode status = HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
-            var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
             try
             {
+                var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
                 UnderlyingResponse.ContentType = "text/html";
                 UnderlyingResponse.ContentLength64 = data.Length;
                 UnderlyingResponse.OutputStream.Write(data, 0, data.Length);
+                UnderlyingResponse.AddHeader("X-Powered-By", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.StatusCode = (int) status;
                 UnderlyingResponse.OutputStream.Flush();
             }
             catch (Exception)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+#if DEBUG
+                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
+#endif
             }
             finally
             {
