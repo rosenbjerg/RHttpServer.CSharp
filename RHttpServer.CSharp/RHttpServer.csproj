@@ -48,6 +48,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HttpMethod.cs" />
+    <Compile Include="Logging\Logger.cs" />
+    <Compile Include="Logging\LoggingOptions.cs" />
+    <Compile Include="Plugins\Default\SimpleBodyParser.cs" />
+    <Compile Include="Plugins\IBodyParser.cs" />
     <Compile Include="Plugins\IHttpSecurityHandler.cs" />
     <Compile Include="Plugins\IHttpSecuritySettings.cs" />
     <Compile Include="Plugins\IJsonConverter.cs" />

@@ -22,11 +22,7 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public string this[string headerName]
         {
-            get
-            {
-                if (_headers.AllKeys.Any(h => h == headerName)) return null;
-                return _headers[headerName];
-            }
+            get { return _headers.AllKeys.Any(h => h == headerName) ? _headers[headerName] : null; }
         }
     }
 }

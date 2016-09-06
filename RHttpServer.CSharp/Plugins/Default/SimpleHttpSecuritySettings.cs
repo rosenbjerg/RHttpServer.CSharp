@@ -5,6 +5,12 @@
     /// </summary>
     public sealed class SimpleHttpSecuritySettings : RPlugin, IHttpSecuritySettings
     {
+        /// <summary>
+        /// Default settings for security
+        /// </summary>
+        /// <param name="sessLenSec"></param>
+        /// <param name="maxReqsPrSess"></param>
+        /// <param name="banTimeMin"></param>
         public SimpleHttpSecuritySettings(int sessLenSec = 600, int maxReqsPrSess = 1000, int banTimeMin = 60)
         {
             SessionLengthSeconds = sessLenSec;

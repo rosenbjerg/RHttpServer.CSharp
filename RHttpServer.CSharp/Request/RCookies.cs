@@ -16,7 +16,7 @@ namespace RHttpServer.Request
         private readonly CookieCollection _cookies;
 
         /// <summary>
-        /// Returns the cookie with the given id if any
+        ///     Returns the cookie with the given id if any
         /// </summary>
         /// <param name="cookieId"></param>
         public Cookie this[string cookieId]
@@ -27,11 +27,9 @@ namespace RHttpServer.Request
                 {
                     return _cookies[cookieId];
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-#if DEBUG
-                    Console.WriteLine(e);
-#endif
+                    Logging.Logger.Log(ex);
                     return null;
                 }
             }

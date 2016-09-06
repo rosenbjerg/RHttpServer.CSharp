@@ -1,5 +1,6 @@
-using System.IO;
 using System.Net;
+using System.Threading.Tasks;
+using RHttpServer.Plugins;
 
 namespace RHttpServer.Request
 {
@@ -8,13 +9,16 @@ namespace RHttpServer.Request
     /// </summary>
     public class RRequest
     {
-        internal RRequest(HttpListenerRequest req, RequestParams par)
+        internal RRequest(HttpListenerRequest req, RequestParams par, RPluginCollection pluginCollection)
         {
             UnderlyingRequest = req;
             Params = par;
             Cookies = new RCookies(req.Cookies);
             Headers = new RHeaders(req.Headers);
+            _bodyParser = pluginCollection.Use<IBodyParser>();
         }
+
+        private readonly IBodyParser _bodyParser;
 
         /// <summary>
         ///     The headers contained in the request
@@ -38,26 +42,13 @@ namespace RHttpServer.Request
         public HttpListenerRequest UnderlyingRequest { get; }
 
         /// <summary>
-        ///     Returns the MIME type for the body
-        /// </summary>
-        /// <returns>The MIME type as a string</returns>
-        public string GetBodyMimeType() => UnderlyingRequest.ContentType;
-
-        /// <summary>
         ///     Returns the body of the request
         ///     and null if the request does not contain a body
         /// </summary>
         /// <returns>The request body as a string</returns>
-        public string GetBody()
+        public Task<T> GetBody<T>()
         {
-            if (!UnderlyingRequest.HasEntityBody) return null;
-            using (var body = UnderlyingRequest.InputStream)
-            {
-                using (var reader = new StreamReader(body, UnderlyingRequest.ContentEncoding))
-                {
-                    return reader.ReadToEnd();
-                }
-            }
+            return _bodyParser.ParseBody<T>(UnderlyingRequest);
         }
     }
 }

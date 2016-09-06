@@ -10,7 +10,7 @@ namespace RHttpServer.Plugins.Default
     /// <summary>
     ///     The default security handler
     /// </summary>
-    public sealed class SimpleServerProtection : RPlugin, IHttpSecurityHandler
+    internal sealed class SimpleServerProtection : RPlugin, IHttpSecurityHandler
     {
         internal SimpleServerProtection()
         {
@@ -77,9 +77,8 @@ namespace RHttpServer.Plugins.Default
                     if (vis.JustRequested() <= Settings.MaxRequestsPerSession) return true;
                     _blacklist.TryAdd(url, 1);
                     _visitors.TryRemove(url, out vis);
-#if DEBUG
-                    Console.WriteLine($"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
-#endif
+
+                    Logging.Logger.Log("Security", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
                     return true;
                 }
                 _visitors.TryAdd(url, new HttpRequester());

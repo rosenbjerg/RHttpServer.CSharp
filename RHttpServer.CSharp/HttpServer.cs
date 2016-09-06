@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -20,6 +19,7 @@ namespace RHttpServer
     public class HttpServer : IDisposable
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        internal static bool ThrowExceptions;
 
 
         /// <summary>
@@ -29,15 +29,14 @@ namespace RHttpServer
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="port">Port of the server.</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
-        public HttpServer(int port, int requestHandlerThreads = 2, string path = "")
+        public HttpServer(int port, int requestHandlerThreads = 2, string path = "", bool throwExceptions = false)
         {
             if (requestHandlerThreads < 1)
             {
                 requestHandlerThreads = 1;
-#if DEBUG
-                Console.WriteLine("Minimum 1 request-handler threads");
-#endif
+                Logging.Logger.Log("Thread setting", "Minimum 1 request-handler threads");
             }
+            ThrowExceptions = throwExceptions;
             if (path.StartsWith("./")) path = Path.Combine(Environment.CurrentDirectory, path.Replace("./", ""));
             PublicDir = path;
             Port = port;
@@ -55,9 +54,14 @@ namespace RHttpServer
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
-        public HttpServer(int requestHandlerThreads = 2, string path = "")
+        public HttpServer(int requestHandlerThreads = 2, string path = "", bool throwExceptions = false)
         {
-            if (requestHandlerThreads < 1) requestHandlerThreads = 1;
+            if (requestHandlerThreads < 1)
+            {
+                requestHandlerThreads = 1;
+                Logging.Logger.Log("Thread setting", "Minimum 1 request-handler threads");
+            }
+            ThrowExceptions = throwExceptions;
             if (path.StartsWith("./")) path = path.Replace("./", Environment.CurrentDirectory);
             PublicDir = path;
             //get an empty port
@@ -188,9 +192,7 @@ namespace RHttpServer
                 _workers[i].Start();
             }
             Console.WriteLine("RHttpServer v. {0} started", Version);
-#if DEBUG
-            if (localOnly) Console.WriteLine("Listening on localhost only");
-#endif
+            if (localOnly) Logging.Logger.Log("Server visibility", "Listening on localhost only");
         }
 
         /// <summary>
@@ -200,12 +202,19 @@ namespace RHttpServer
             SimpleHttpSecuritySettings securitySettings = null)
         {
             if (_defPluginsReady) return;
+
             if (!_rPluginCollection.IsRegistered<IJsonConverter>())
                 RegisterPlugin<IJsonConverter, ServiceStackJsonConverter>(new ServiceStackJsonConverter());
+
             if (!_rPluginCollection.IsRegistered<IPageRenderer>())
                 RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
+
             if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>())
                 RegisterPlugin<IHttpSecurityHandler, SimpleServerProtection>(new SimpleServerProtection());
+
+            if (!_rPluginCollection.IsRegistered<IBodyParser>())
+                RegisterPlugin<IBodyParser, SimpleBodyParser>(new SimpleBodyParser());
+
             _defPluginsReady = true;
             if (securitySettings == null) securitySettings = new SimpleHttpSecuritySettings();
             _rPluginCollection.Use<IHttpSecurityHandler>().Settings = securitySettings;
@@ -249,11 +258,10 @@ namespace RHttpServer
                         return;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-#if DEBUG
-                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
-#endif
+                Logging.Logger.Log(ex);
+                if (ThrowExceptions) throw;
             }
         }
 
@@ -264,11 +272,10 @@ namespace RHttpServer
                 _queue.Enqueue(_listener.EndGetContext(ar));
                 _ready.Set();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-#if DEBUG
-                Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
-#endif
+                Logging.Logger.Log(ex);
+                if (ThrowExceptions) throw;
             }
         }
 
@@ -288,11 +295,10 @@ namespace RHttpServer
                     if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request))
                         Process(context);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-#if DEBUG
-                    Console.WriteLine("{0}: {1}", ex.GetType().Name, ex.Message);
-#endif
+                    Logging.Logger.Log(ex);
+                    if (ThrowExceptions) throw;
                 }
             }
         }
@@ -318,27 +324,38 @@ namespace RHttpServer
                     hm = HttpMethod.DELETE;
                     break;
                 default:
-#if DEBUG
-                    Console.WriteLine($"Invalid HTTP method: {method} from {context.Request.LocalEndPoint}");
-#endif
+                    Logging.Logger.Log("Invalid HTTP method", $"{method} from {context.Request.LocalEndPoint}");
                     context.Response.StatusCode = (int) HttpStatusCode.NotFound;
                     context.Response.Close();
                     return;
             }
 
             bool generalFallback;
-            var publicFile = !string.IsNullOrEmpty(PublicDir) && !route.TrimStart('/').Contains("/") ? Path.Combine(PublicDir, route.TrimStart('/')) : "";
+            var publicFile = !string.IsNullOrEmpty(PublicDir) && !route.TrimStart('/').Contains("/")
+                ? Path.Combine(PublicDir, route.TrimStart('/'))
+                : "";
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
             if (generalFallback && File.Exists(publicFile))
                 new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
             else if (act != null)
-                act.Action(new RRequest(context.Request, GetParams(act, route)),
-                    new RResponse(context.Response, _rPluginCollection));
+            {
+                RRequest req;
+                RResponse res;
+                CreateReqRes(context, GetParams(act, route), _rPluginCollection, out req, out res);
+                act.Action(req, res);
+            }
             else
             {
                 context.Response.StatusCode = (int) HttpStatusCode.NotFound;
                 context.Response.Close();
             }
+        }
+
+        private static void CreateReqRes(HttpListenerContext context, RequestParams reqPar, RPluginCollection pluins,
+            out RRequest req, out RResponse res)
+        {
+            req = new RRequest(context.Request, reqPar, pluins);
+            res = new RResponse(context.Response, pluins);
         }
 
         private static RequestParams GetParams(RHttpAction act, string route)

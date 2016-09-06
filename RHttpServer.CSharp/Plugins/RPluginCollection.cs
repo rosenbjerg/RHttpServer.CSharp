@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 namespace RHttpServer.Plugins
 {
     /// <summary>
-    /// A collection of RPlugin
+    ///     A collection of RPlugin
     /// </summary>
     public class RPluginCollection
     {
@@ -17,14 +17,14 @@ namespace RHttpServer.Plugins
         }
 
         /// <summary>
-        /// Check whether a plugin is registered to the given type-key
+        ///     Check whether a plugin is registered to the given type-key
         /// </summary>
         /// <typeparam name="TPluginInterface">The type-key to look-up</typeparam>
         /// <returns>Whether the any plugin is registered to TPluginInterface</returns>
         public bool IsRegistered<TPluginInterface>() => _plugins.ContainsKey(typeof(TPluginInterface));
 
         /// <summary>
-        /// Returns the instance of the registered plugin
+        ///     Returns the instance of the registered plugin
         /// </summary>
         /// <typeparam name="TPluginInterface">The type-key to look-up</typeparam>
         /// <exception cref="RHttpServerException">Throws exception when trying to use a plugin that is not registered</exception>
