@@ -11,15 +11,18 @@ namespace RHttpServer.Logging
     {
         private static LoggingOptions _logOpt = LoggingOptions.None;
         private static string _logFilePath;
+        private static bool _stackTrace;
 
         /// <summary>
         ///     Call this method to change to logging option
         /// </summary>
         /// <param name="logOpt"></param>
+        /// <param name="includeStackTrace"></param>
         /// <param name="logFilePath"></param>
-        public static void Configure(LoggingOptions logOpt, string logFilePath = "")
+        public static void Configure(LoggingOptions logOpt, bool includeStackTrace, string logFilePath = "")
         {
             _logOpt = logOpt;
+            _stackTrace = includeStackTrace;
             _logFilePath = logFilePath;
             if (logOpt == LoggingOptions.File && string.IsNullOrWhiteSpace(logFilePath))
             {
@@ -33,7 +36,6 @@ namespace RHttpServer.Logging
         ///     Logs an exception, based of logging option
         /// </summary>
         /// <param name="ex"></param>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void Log(Exception ex)
         {
             switch (_logOpt)
@@ -41,17 +43,17 @@ namespace RHttpServer.Logging
                 case LoggingOptions.None:
                     break;
                 case LoggingOptions.Terminal:
-                    Console.WriteLine($"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}\n Stack trace:\n{ex.StackTrace}");
+                    Console.WriteLine($"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}");
                     break;
                 case LoggingOptions.File:
                     File.AppendAllText(_logFilePath,
-                        $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}\n Stack trace:\n{ex.StackTrace}\n", Encoding.Default);
+                        $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}", Encoding.Default);
                     break;
             }
         }
 
         /// <summary>
-        ///     Log an item using title and message
+        ///     Log an item using title and message, based of logging option
         /// </summary>
         /// <param name="title"></param>
         /// <param name="message"></param>

@@ -181,18 +181,32 @@ namespace RHttpServer
         /// </summary>
         public void Start(bool localOnly = false)
         {
-            InitializeDefaultPlugins();
-            _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "+")}:{Port}/");
-            _listener.Start();
-            _listenerThread.Start();
-
-            for (var i = 0; i < _workers.Length; i++)
+            try
             {
-                _workers[i] = new Thread(Worker);
-                _workers[i].Start();
+                InitializeDefaultPlugins();
+                _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "+")}:{Port}/");
+                _listener.Start();
+                _listenerThread.Start();
+
+                for (var i = 0; i < _workers.Length; i++)
+                {
+                    _workers[i] = new Thread(Worker);
+                    _workers[i].Start();
+                }
+                Console.WriteLine("RHttpServer v. {0} started", Version);
+                if (localOnly) Logging.Logger.Log("Server visibility", "Listening on localhost only");
             }
-            Console.WriteLine("RHttpServer v. {0} started", Version);
-            if (localOnly) Logging.Logger.Log("Server visibility", "Listening on localhost only");
+            catch (SocketException)
+            {
+                Console.WriteLine("Unable to bind to port, the port may already be in use.");
+                Environment.Exit(0);
+            }
+            catch (HttpListenerException)
+            {
+                Console.WriteLine("Could not obtain permission to listen for * (everything) on selected port\n" +
+                                  "Please aquire the permission or start the server as local-only");
+                Environment.Exit(0);
+            }
         }
 
         /// <summary>
@@ -323,6 +337,10 @@ namespace RHttpServer
                 case "DELETE":
                     hm = HttpMethod.DELETE;
                     break;
+                case "HEAD":
+                    context.Response.AddHeader("Server", $"RHttpServer.CSharp/{Version}");
+                    context.Response.Close();
+                    return;
                 default:
                     Logging.Logger.Log("Invalid HTTP method", $"{method} from {context.Request.LocalEndPoint}");
                     context.Response.StatusCode = (int) HttpStatusCode.NotFound;
@@ -351,11 +369,11 @@ namespace RHttpServer
             }
         }
 
-        private static void CreateReqRes(HttpListenerContext context, RequestParams reqPar, RPluginCollection pluins,
+        private static void CreateReqRes(HttpListenerContext context, RequestParams reqPar, RPluginCollection plugins,
             out RRequest req, out RResponse res)
         {
-            req = new RRequest(context.Request, reqPar, pluins);
-            res = new RResponse(context.Response, pluins);
+            req = new RRequest(context.Request, reqPar, plugins);
+            res = new RResponse(context.Response, plugins);
         }
 
         private static RequestParams GetParams(RHttpAction act, string route)
