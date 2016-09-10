@@ -17,7 +17,7 @@ The tool requires the [Mono runtime](http://www.mono-project.com/docs/getting-st
 
 
 ### Example
-In this example, we listen on port 3000 and respond using 4 threads, without security on.
+In this example, we listen locally on port 3000 and respond using 4 threads, without security on.
 
 This example only handles GET http requests and the public folder is placed in the same folder as the server executable
 
