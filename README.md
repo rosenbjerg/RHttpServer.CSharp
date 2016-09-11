@@ -71,6 +71,13 @@ register it before initializing default plugins and/or starting the server.
 The .ecs file format is merely an extension used for html pages with ecs-tags.
 ecs-tags have the form <%TAG%>, so if i wanted a tag named 'foo' on my page, 
 so that it could be replaced later, the tag would look like this: <%foo%>.
+
+You can also embed files containing page content, like a header, or a footer.
+An ecs tag for a file have the following format: <¤PATH¤>.
+The PATH should either be relative to the server executable, or the full path of the file.
+PATH example using relative path: <¤./public/header.html¤>.
+
+
 - The file extension is enforced by the default page renderer to avoid confusion with regular html files without tags.
 - The format is inspired by the ejs format, though you cannot embed JavaScript or C# for that matter, in the pages.
 This was chosen because i did NOT like the idea behind it.
