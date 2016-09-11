@@ -1,4 +1,5 @@
 ﻿using RHttpServer;
+using RHttpServer.Logging;
 using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
 
@@ -54,9 +55,9 @@ namespace SimpleRHttpServer
 
             server.Get("/*", (req, res) => { res.Redirect("/404"); });
 
+            Logger.Configure(LoggingOptions.File, true, "./log.txt");
 
-            server.InitializeDefaultPlugins(securitySettings: new SimpleHttpSecuritySettings(2, 20000));
-            //server.RegisterPlugin<SimpleSQLiteDatatase, SimpleSQLiteDatatase>(new SimpleSQLiteDatatase("./db.sqlite"));
+            server.InitializeDefaultPlugins(renderCaching: false, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
 
             server.Start(true);
         }

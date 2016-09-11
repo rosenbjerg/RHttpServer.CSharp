@@ -8,6 +8,8 @@ namespace RHttpServer
         private readonly RouteTree _getTree = new RouteTree("", null);
         private readonly RouteTree _postTree = new RouteTree("", null);
         private readonly RouteTree _putTree = new RouteTree("", null);
+        private readonly RouteTree _headTree = new RouteTree("", null);
+        private readonly RouteTree _optionsTree = new RouteTree("", null);
 
 
         internal bool AddRoute(RHttpAction action, HttpMethod method)
@@ -22,6 +24,10 @@ namespace RHttpServer
                     return AddToTree(_putTree, action);
                 case HttpMethod.DELETE:
                     return AddToTree(_deleteTree, action);
+                case HttpMethod.HEAD:
+                    return AddToTree(_headTree, action);
+                case HttpMethod.OPTIONS:
+                    return AddToTree(_optionsTree, action);
             }
             return false;
         }
@@ -56,6 +62,12 @@ namespace RHttpServer
                     break;
                 case HttpMethod.DELETE:
                     tree = _deleteTree;
+                    break;
+                case HttpMethod.HEAD:
+                    tree = _headTree;
+                    break;
+                case HttpMethod.OPTIONS:
+                    tree = _optionsTree;
                     break;
             }
 

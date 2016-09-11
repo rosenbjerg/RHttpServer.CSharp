@@ -21,7 +21,7 @@ namespace RHttpServer
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
 
-
+        // TODO Finish up new esc rendering function
         /// <summary>
         ///     Constructs and starts a server with given port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
@@ -144,7 +144,9 @@ namespace RHttpServer
         //public TPluginInterface GetPlugin<TPluginInterface>() => _rPluginCollection.Use<TPluginInterface>();
 
         /// <summary>
-        ///     Add action to handle GET requests to a given route
+        ///     Add action to handle GET requests to a given route<para />
+        ///     Should always be idempotent.
+        ///     (Receiving the same GET request one or multiple times should yield same result)
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
@@ -160,7 +162,9 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.POST);
 
         /// <summary>
-        ///     Add action to handle PUT requests to a given route
+        ///     Add action to handle PUT requests to a given route.<para />
+        ///     Should always be idempotent.
+        ///     (Receiving the same PUT request one or multiple times should yield same result)
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
@@ -168,13 +172,38 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.PUT);
 
         /// <summary>
-        ///     Add action to handle DELETE requests to a given route
+        ///     Add action to handle DELETE requests to a given route.<para />
+        ///     Should always be idempotent.
+        ///     (Receiving the same DELETE request one or multiple times should yield same result)
         /// </summary>
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
         public void Delete(string route, Action<RRequest, RResponse> action)
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
 
+        /// <summary>
+        ///     Add action to handle HEAD requests to a given route
+        ///     You should only send the headers of the route as response<para />
+        ///     Should always be idempotent.
+        ///     (Receiving the same HEAD request one or multiple times should yield same result)
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the request</param>
+        public void Head(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
+
+        /// <summary>
+        ///     Add action to handle OPTIONS requests to a given route
+        ///     You should respond only using headers.<para />
+        ///     Should always be idempotent.
+        ///     (Receiving the same HEAD request one or multiple times should yield same result)<para />
+        ///     And should contain one header with the id "Allow", and the content should contain the HTTP methods the route allows.
+        ///     (f.x. "Allow": "GET, POST, OPTIONS")
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the request</param>
+        public void Options(string route, Action<RRequest, RResponse> action)
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
 
         /// <summary>
         ///     Starts the server on a separate thread

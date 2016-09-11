@@ -5,6 +5,8 @@ namespace RHttpServer
         GET,
         POST,
         PUT,
-        DELETE
+        DELETE,
+        HEAD,
+        OPTIONS
     }
 }
