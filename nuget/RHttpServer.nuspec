@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.1.7</version>
+    <version>1.0.2.3</version>
     <title>RHS - RHttpServer</title>
     <authors>Rosenbjerg Softworks</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -15,7 +15,7 @@ RHttpServer is a simple server framework for creating powerful http servers for 
 	<summary>
 RHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with express.
 A simple plugin for dynamic page rendering is included, which offers the ability to embed dynamically created content in the html file, even js objects, and supports page caching for improved performance.
-The framework also includes a simple security plugin which offers some protection against simple (D)DOS attacks.
+The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
     <releaseNotes>First public release</releaseNotes>
