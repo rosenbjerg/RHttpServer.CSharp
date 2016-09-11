@@ -73,7 +73,9 @@ ecs-tags have the form <%TAG%>, so if i wanted a tag named 'foo' on my page,
 so that it could be replaced later, the tag would look like this: <%foo%>.
 
 You can also embed files containing page content, like a header, or a footer.
+
 An ecs tag for a file have the following format: <¤PATH¤>.
+
 The PATH should either be relative to the server executable, or the full path of the file.
 PATH example using relative path: <¤./public/header.html¤>.
 
