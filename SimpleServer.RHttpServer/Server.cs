@@ -23,6 +23,11 @@ namespace SimpleRHttpServer
                 res.RenderPage("./public/index.ecs", pars);
             });
 
+            server.Get("/download", (req, res) =>
+            {
+                res.Download("./ServiceStack.Text.dll");
+            });
+
             server.Get("/render2", (req, res) =>
             {
                 var pars = server.CreateRenderParams();

@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.2.3</version>
+    <version>1.0.2.7</version>
     <title>RHS - RHttpServer</title>
     <authors>Rosenbjerg Softworks</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -18,7 +18,7 @@ A simple plugin for dynamic page rendering is included, which offers the ability
 The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
-    <releaseNotes>First public release</releaseNotes>
+    <releaseNotes>Improved public file handling</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>RHttpServer rhs http server api rendering </tags>
   <dependencies>
@@ -28,7 +28,7 @@ See project page for more information.
 </dependencies>
   </metadata>
   <files>
-    <file src="bin\RHttpServer.dll" target="lib\Net40" />
+    <file src="bin\RHttpServer.dll" target="lib\net45" />
     <file src="bin\RHttpServer.xml" target="lib" />
   </files>
 </package>

@@ -142,6 +142,7 @@ namespace RHttpServer.Response
                 UnderlyingResponse.ContentType = "text/plain";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.OutputStream.Flush();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
@@ -173,6 +174,7 @@ namespace RHttpServer.Response
                 UnderlyingResponse.ContentType = "application/json";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.OutputStream.Flush();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
@@ -205,6 +207,10 @@ namespace RHttpServer.Response
                     UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
                         ? mime
                         : "application/octet-stream";
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
+                UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
+                UnderlyingResponse.AddHeader("Content-disposition", "inline; filename=" + Path.GetFileName(filepath));
                 using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var len = input.Length;
@@ -216,11 +222,6 @@ namespace RHttpServer.Response
                         UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
                     UnderlyingResponse.OutputStream.Flush();
                 }
-
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
-                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
-                UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
-                UnderlyingResponse.AddHeader("Content-disposition", "inline; filename=" + Path.GetFileName(filepath));
             }
             catch (Exception ex)
             {
@@ -240,9 +241,10 @@ namespace RHttpServer.Response
         ///     Sends file as response and requests the data to be downloaded as an attachment
         /// </summary>
         /// <param name="filepath">The local path of the file to send</param>
+        /// <param name="filename">The name filename the client receives the file with, defaults to using the actual filename</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public void Download(string filepath, string mime = null, HttpStatusCode status = HttpStatusCode.OK)
+        public void Download(string filepath, string filename = "", string mime = null, HttpStatusCode status = HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -252,6 +254,10 @@ namespace RHttpServer.Response
                     UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
                         ? mime
                         : "application/octet-stream";
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
+                UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
+                UnderlyingResponse.AddHeader("Content-disposition", "attachment; filename=" + (string.IsNullOrWhiteSpace(filename) ? Path.GetFileName(filepath) : filename));
                 using (var input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var len = input.Length;
@@ -264,10 +270,6 @@ namespace RHttpServer.Response
                     UnderlyingResponse.OutputStream.Flush();
                 }
                 
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
-                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
-                UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
-                UnderlyingResponse.AddHeader("Content-disposition", "attachment; filename=" + Path.GetFileName(filepath));
             }
             catch (Exception ex)
             {

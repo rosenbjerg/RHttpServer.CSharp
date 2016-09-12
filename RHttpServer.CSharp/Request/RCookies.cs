@@ -16,7 +16,7 @@ namespace RHttpServer.Request
         private readonly CookieCollection _cookies;
 
         /// <summary>
-        ///     Returns the cookie with the given id if any
+        ///     Returns the cookie with the given tag if any
         /// </summary>
         /// <param name="cookieId"></param>
         public Cookie this[string cookieId]

@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 namespace RHttpServer.Plugins
 {
     /// <summary>
-    ///     A collection of RPlugin
+    ///     A collection of RPlugins
     /// </summary>
     public class RPluginCollection
     {

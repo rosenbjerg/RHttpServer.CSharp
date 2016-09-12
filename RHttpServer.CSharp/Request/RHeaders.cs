@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 
@@ -23,6 +25,19 @@ namespace RHttpServer.Request
         public string this[string headerName]
         {
             get { return _headers.AllKeys.Any(h => h == headerName) ? _headers[headerName] : null; }
+        }
+
+        /// <summary>
+        /// Returns all name-value pairs as tuples with the name of the header first.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Tuple<string, string>> GetAll()
+        {
+            var h = _headers.AllKeys;
+            foreach (var s in h)
+            {
+                yield return new Tuple<string, string>(s, _headers[s]);
+            }
         }
     }
 }

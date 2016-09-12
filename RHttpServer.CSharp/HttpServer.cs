@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
@@ -20,15 +21,15 @@ namespace RHttpServer
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
-
-        // TODO Finish up new esc rendering function
+        
         /// <summary>
         ///     Constructs and starts a server with given port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
-        /// <param name="port">Port of the server.</param>
+        /// <param name="port">The port that the server should listen on</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
+        /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
         public HttpServer(int port, int requestHandlerThreads = 2, string path = "", bool throwExceptions = false)
         {
             if (requestHandlerThreads < 1)
@@ -54,6 +55,7 @@ namespace RHttpServer
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
+        /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
         public HttpServer(int requestHandlerThreads = 2, string path = "", bool throwExceptions = false)
         {
             if (requestHandlerThreads < 1)
@@ -101,8 +103,7 @@ namespace RHttpServer
         public int Port { get; }
 
         /// <summary>
-        ///     Whether the security is turned on.
-        ///     Set using SetSecuritySettings(..)
+        ///     Whether security is turned on
         /// </summary>
         public bool SecurityOn
         {
@@ -206,7 +207,7 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
 
         /// <summary>
-        ///     Starts the server on a separate thread
+        ///     Starts the server
         /// </summary>
         public void Start(bool localOnly = false)
         {
@@ -378,12 +379,30 @@ namespace RHttpServer
             }
 
             bool generalFallback;
-            var publicFile = !string.IsNullOrEmpty(PublicDir) && !route.TrimStart('/').Contains("/")
-                ? Path.Combine(PublicDir, route.TrimStart('/'))
-                : "";
+           
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
-            if (generalFallback && File.Exists(publicFile))
-                new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+            if (generalFallback && !string.IsNullOrWhiteSpace(PublicDir))
+            {
+                var p = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries).ToList();
+                p.Insert(0, PublicDir);
+                var publicFile = Path.Combine(p.ToArray());
+                if (File.Exists(publicFile))
+                {
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+                }
+                else if (act != null)
+                {
+                    RRequest req;
+                    RResponse res;
+                    CreateReqRes(context, GetParams(act, route), _rPluginCollection, out req, out res);
+                    act.Action(req, res);
+                }
+                else
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                    context.Response.Close();
+                }
+            }
             else if (act != null)
             {
                 RRequest req;

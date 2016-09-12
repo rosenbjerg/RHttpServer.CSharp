@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace RHttpServer.Plugins.Default
 {
     /// <summary>
-    ///     The default security handler
+    ///     The default security handler. Can protect against DOS attacks
     /// </summary>
     internal sealed class SimpleServerProtection : RPlugin, IHttpSecurityHandler
     {
@@ -33,7 +33,7 @@ namespace RHttpServer.Plugins.Default
             while (_maintainerRunning)
             {
                 await Task.Delay(TimeSpan.FromSeconds(Settings.SessionLengthSeconds/2.0));
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow;
                 var olds =
                     _visitors.Where(
                         t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
@@ -51,7 +51,7 @@ namespace RHttpServer.Plugins.Default
             while (_maintainerRunning)
             {
                 await Task.Delay(TimeSpan.FromMinutes(Settings.BanTimeMinutes/2.0));
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow;
                 var olds =
                     _visitors.Where(
                         t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
@@ -105,5 +105,48 @@ namespace RHttpServer.Plugins.Default
         }
 
         public IHttpSecuritySettings Settings { get; set; }
+
+        /// <summary>
+        /// Represents a http client in the DOS security implementation
+        /// </summary>
+        internal class HttpRequester
+        {
+            internal HttpRequester()
+            {
+                RequestsInSession = 1;
+                SessionStarted = DateTime.UtcNow;
+            }
+
+            private readonly object _lock = new object();
+
+            /// <summary>
+            /// When the current request session was started
+            /// </summary>
+            public DateTime SessionStarted { get; }
+
+            /// <summary>
+            /// The number of requests since session start
+            /// </summary>
+            public int RequestsInSession { get; private set; }
+
+            /// <summary>
+            /// When the latest request from client was received
+            /// </summary>
+            public DateTime LatestVisit { get; private set; }
+
+            /// <summary>
+            /// Called everytime a client requests something
+            /// </summary>
+            /// <returns></returns>
+            public int JustRequested()
+            {
+                lock (_lock)
+                {
+                    RequestsInSession++;
+                }
+                LatestVisit = DateTime.UtcNow;
+                return RequestsInSession;
+            }
+        }
     }
 }

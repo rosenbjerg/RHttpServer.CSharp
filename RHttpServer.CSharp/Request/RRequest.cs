@@ -15,8 +15,12 @@ namespace RHttpServer.Request
             Params = par;
             Cookies = new RCookies(req.Cookies);
             Headers = new RHeaders(req.Headers);
+            Queries = new RQueries(req.QueryString);
+            var da = Queries["id"];
             _bodyParser = pluginCollection.Use<IBodyParser>();
         }
+
+        public RQueries Queries { get; set; }
 
         private readonly IBodyParser _bodyParser;
 

@@ -58,6 +58,7 @@
     <Compile Include="Plugins\IPageRenderer.cs" />
     <Compile Include="Plugins\RPlugin.cs" />
     <Compile Include="Plugins\RPluginCollection.cs" />
+    <Compile Include="Request\RQueries.cs" />
     <Compile Include="RHttpServerException.cs" />
     <Compile Include="RouteTree.cs" />
     <Compile Include="RouteTreeManager.cs" />
@@ -72,7 +73,6 @@
     <Compile Include="Plugins\Default\ServiceStackJsonConverter.cs" />
     <Compile Include="Request\RRequest.cs" />
     <Compile Include="Response\RResponse.cs" />
-    <Compile Include="Plugins\Default\HttpRequester.cs" />
     <Compile Include="Request\RCookies.cs" />
     <Compile Include="Request\RHeaders.cs" />
   </ItemGroup>
