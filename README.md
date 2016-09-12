@@ -11,7 +11,7 @@ The tool will automatically download all missing nuget dependencies, if a packag
 
 rhsb can also be used to start the server in the background, and later-on, stop it again
 
-You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb-installer)
+You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb-installer/download)
 
 The tool requires the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) to be installed if using Linux or Mac OSX
 
