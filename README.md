@@ -22,7 +22,7 @@ In this example, we listen locally on port 3000 and respond using 4 threads, wit
 This example only handles GET http requests and the public folder is placed in the same folder as the server executable
 
 ```csharp
-var server = new SimpleHttpServer(3000, 4, "./public");
+var server = new RHttpServer.HttpServer(3000, 4, "./public");
 
 server.Get("/", (req, res) =>
 {
