@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace RHttpServer.Request
 {
     /// <summary>
-    ///     Object containing parameters for a request
+    ///     Object containing the parameters for a request
     /// </summary>
     public class RequestParams
     {

@@ -49,13 +49,15 @@
   <ItemGroup>
     <Compile Include="HttpMethod.cs" />
     <Compile Include="Logging\Logger.cs" />
-    <Compile Include="Logging\LoggingOptions.cs" />
+    <Compile Include="Logging\LoggingOption.cs" />
+    <Compile Include="Plugins\Default\ServiceStackXmlConverter.cs" />
     <Compile Include="Plugins\Default\SimpleBodyParser.cs" />
     <Compile Include="Plugins\IBodyParser.cs" />
     <Compile Include="Plugins\IHttpSecurityHandler.cs" />
     <Compile Include="Plugins\IHttpSecuritySettings.cs" />
     <Compile Include="Plugins\IJsonConverter.cs" />
     <Compile Include="Plugins\IPageRenderer.cs" />
+    <Compile Include="Plugins\IXmlConverter.cs" />
     <Compile Include="Plugins\RPlugin.cs" />
     <Compile Include="Plugins\RPluginCollection.cs" />
     <Compile Include="Request\RQueries.cs" />

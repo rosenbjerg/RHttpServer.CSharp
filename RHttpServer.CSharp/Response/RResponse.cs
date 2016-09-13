@@ -132,12 +132,12 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="data">The text data to send</param>
         /// <param name="status">The status code for the response</param>
-        public void SendString(string data, HttpStatusCode status = HttpStatusCode.OK)
+        public void SendString(string data, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
-                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(data);
                 UnderlyingResponse.ContentType = "text/plain";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
@@ -164,12 +164,12 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="data">The object to be serialized and send</param>
         /// <param name="status">The status code for the response</param>
-        public void SendJson(object data, HttpStatusCode status = HttpStatusCode.OK)
+        public void SendJson(object data, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
-                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
                 UnderlyingResponse.ContentType = "application/json";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
@@ -192,17 +192,49 @@ namespace RHttpServer.Response
         }
 
         /// <summary>
+        ///     Sends object serialized to text using the current IXmlConverter plugin
+        /// </summary>
+        /// <param name="data">The object to be serialized and send</param>
+        /// <param name="status">The status code for the response</param>
+        public void SendXml(object data, int status = (int)HttpStatusCode.OK)
+        {
+            if (Closed) throw new RHttpServerException("You can only send the response once");
+            try
+            {
+                UnderlyingResponse.StatusCode = status;
+                var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IXmlConverter>().Serialize(data));
+                UnderlyingResponse.ContentType = "application/json";
+                UnderlyingResponse.ContentLength64 = bytes.Length;
+                UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.OutputStream.Flush();
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+            }
+            catch (Exception ex)
+            {
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                Logging.Logger.Log(ex);
+                if (HttpServer.ThrowExceptions) throw;
+            }
+            finally
+            {
+                UnderlyingResponse.OutputStream.Close();
+                UnderlyingResponse.Close();
+                Closed = true;
+            }
+        }
+
+        /// <summary>
         ///     Sends file as response and requests the data to be displayed in-browser if possible
         /// </summary>
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public void SendFile(string filepath, string mime = null, HttpStatusCode status = HttpStatusCode.OK)
+        public void SendFile(string filepath, string mime = null, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
-                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.StatusCode = status;
                 if (mime == null)
                     UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
                         ? mime
@@ -216,7 +248,7 @@ namespace RHttpServer.Response
                     var len = input.Length;
                     UnderlyingResponse.ContentLength64 = len;
 
-                    var buffer = len < 0x10000 ? new byte[len] : new byte[0x10000];
+                    var buffer = len < 0x4000 ? new byte[len] : new byte[0x4000];
                     int nbytes;
                     while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
                         UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
@@ -244,12 +276,12 @@ namespace RHttpServer.Response
         /// <param name="filename">The name filename the client receives the file with, defaults to using the actual filename</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public void Download(string filepath, string filename = "", string mime = null, HttpStatusCode status = HttpStatusCode.OK)
+        public void Download(string filepath, string filename = "", string mime = null, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
-                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.StatusCode = status;
                 if (mime == null)
                     UnderlyingResponse.ContentType = MimeTypes.TryGetValue(Path.GetExtension(filepath), out mime)
                         ? mime
@@ -263,7 +295,7 @@ namespace RHttpServer.Response
                     var len = input.Length;
                     UnderlyingResponse.ContentLength64 = len;
 
-                    var buffer = len < 0x10000 ? new byte[len] : new byte[0x10000];
+                    var buffer = len < 0x4000 ? new byte[len] : new byte[0x4000];
                     int nbytes;
                     while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
                         UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
@@ -291,12 +323,12 @@ namespace RHttpServer.Response
         /// <param name="pagefilepath">The path of the file to be rendered</param>
         /// <param name="parameters">The parameter collection used when replacing data</param>
         /// <param name="status">The status code for the response</param>
-        public void RenderPage(string pagefilepath, RenderParams parameters, HttpStatusCode status = HttpStatusCode.OK)
+        public void RenderPage(string pagefilepath, RenderParams parameters, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
-                UnderlyingResponse.StatusCode = (int)status;
+                UnderlyingResponse.StatusCode = status;
                 var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
                 UnderlyingResponse.ContentType = "text/html";
                 UnderlyingResponse.ContentLength64 = data.Length;

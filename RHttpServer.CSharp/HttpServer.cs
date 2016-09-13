@@ -15,15 +15,16 @@ using RHttpServer.Response;
 namespace RHttpServer
 {
     /// <summary>
-    ///     Represents a HTTP server that can be configured before starting
+    ///     Represents a HTTP server. 
+    ///     It should be set up before start
     /// </summary>
     public class HttpServer : IDisposable
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
-        
+
         /// <summary>
-        ///     Constructs and starts a server with given port and using the given path as public folder.
+        ///     Constructs a server instance with given port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
@@ -50,7 +51,7 @@ namespace RHttpServer
         }
 
         /// <summary>
-        ///     Constructs and starts a server with automatically found port and using the given path as public folder.
+        ///     Constructs a server instance with automatically found port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
@@ -98,7 +99,7 @@ namespace RHttpServer
         public string PublicDir { get; }
 
         /// <summary>
-        ///     The current port in use
+        ///     The port that the server is listening on
         /// </summary>
         public int Port { get; }
 
@@ -124,7 +125,8 @@ namespace RHttpServer
         }
 
         /// <summary>
-        ///     Register a plugin to be used in the server
+        ///     Register a plugin to be used in the server.<para />
+        ///     You can replace the default plugins by registering your plugin using the same interface as key before starting the server
         /// </summary>
         /// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
         /// <typeparam name="TPlugin">The type of the plugin instance</typeparam>
@@ -198,7 +200,7 @@ namespace RHttpServer
         ///     You should respond only using headers.<para />
         ///     Should always be idempotent.
         ///     (Receiving the same HEAD request one or multiple times should yield same result)<para />
-        ///     And should contain one header with the id "Allow", and the content should contain the HTTP methods the route allows.
+        ///     And should contain one header with the id "Allow", and the content should contain the HTTP methods the route allows.<para />
         ///     (f.x. "Allow": "GET, POST, OPTIONS")
         /// </summary>
         /// <param name="route">The route to respond to</param>
@@ -207,8 +209,9 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
 
         /// <summary>
-        ///     Starts the server
+        ///     Starts the server, and all request handling threads<para />
         /// </summary>
+        /// <param name="localOnly">Whether to only listn locally</param>
         public void Start(bool localOnly = false)
         {
             try
@@ -233,14 +236,16 @@ namespace RHttpServer
             }
             catch (HttpListenerException)
             {
-                Console.WriteLine("Could not obtain permission to listen for * (everything) on selected port\n" +
+                Console.WriteLine("Could not obtain permission to listen for + (everything) on selected port\n" +
                                   "Please aquire the permission or start the server as local-only");
                 Environment.Exit(0);
             }
         }
 
         /// <summary>
-        ///     Initializes any default plugin if no other plugin is registered to same interface
+        ///     Initializes any default plugin if no other plugin is registered to same interface <para />
+        ///     Also used for changing the default security settings <para />
+        ///     Should be called after you have registered all your non-default plugins
         /// </summary>
         public void InitializeDefaultPlugins(bool renderCaching = true, bool securityOn = false,
             SimpleHttpSecuritySettings securitySettings = null)
@@ -249,6 +254,9 @@ namespace RHttpServer
 
             if (!_rPluginCollection.IsRegistered<IJsonConverter>())
                 RegisterPlugin<IJsonConverter, ServiceStackJsonConverter>(new ServiceStackJsonConverter());
+
+            if (!_rPluginCollection.IsRegistered<IXmlConverter>())
+                RegisterPlugin<IXmlConverter, ServiceStackXmlConverter>(new ServiceStackXmlConverter());
 
             if (!_rPluginCollection.IsRegistered<IPageRenderer>())
                 RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
@@ -260,6 +268,7 @@ namespace RHttpServer
                 RegisterPlugin<IBodyParser, SimpleBodyParser>(new SimpleBodyParser());
 
             _defPluginsReady = true;
+
             if (securitySettings == null) securitySettings = new SimpleHttpSecuritySettings();
             _rPluginCollection.Use<IHttpSecurityHandler>().Settings = securitySettings;
             _rPluginCollection.Use<IPageRenderer>().CachePages = renderCaching;
@@ -267,16 +276,16 @@ namespace RHttpServer
         }
 
         /// <summary>
-        ///     Stops the server thread and all worker threads.
+        ///     Stops the server thread and all request handling threads.
         /// </summary>
         public void Stop()
         {
-            _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
             _stop.Set();
             _listenerThread.Join();
             foreach (var worker in _workers)
                 worker.Join(100);
             _listener.Stop();
+            _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
         }
 
         /// <summary>

@@ -60,7 +60,7 @@ namespace SimpleRHttpServer
 
             server.Get("/*", (req, res) => { res.Redirect("/404"); });
 
-            Logger.Configure(LoggingOptions.File, true, "./log.txt");
+            Logger.Configure(LoggingOption.File, true, "./log.txt");
 
             server.InitializeDefaultPlugins(renderCaching: false, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
 

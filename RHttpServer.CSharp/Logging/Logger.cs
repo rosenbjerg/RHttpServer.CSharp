@@ -5,47 +5,54 @@ using System.Text;
 namespace RHttpServer.Logging
 {
     /// <summary>
-    ///     Class used to control the logging of the server.
+    ///     Class used to log things easily
     /// </summary>
     public static class Logger
     {
-        private static LoggingOptions _logOpt = LoggingOptions.None;
+        private static LoggingOption _logOpt = LoggingOption.None;
         private static string _logFilePath;
         private static bool _stackTrace;
 
         /// <summary>
-        ///     Call this method to change to logging option
+        ///     Method used to configure the logger.
+        ///     By default the logger is set to LoggingOption.None
         /// </summary>
-        /// <param name="logOpt"></param>
-        /// <param name="includeStackTrace"></param>
-        /// <param name="logFilePath"></param>
-        public static void Configure(LoggingOptions logOpt, bool includeStackTrace, string logFilePath = "")
+        /// <param name="logOpt">How (and if) logging should be performed</param>
+        /// <param name="includeStackTrace">Whether to include the stack trace when logging exceptions</param>
+        /// <param name="logFilePath">Where the log file is stored, if LoggingOption.File is chosen</param>
+        public static void Configure(LoggingOption logOpt, bool includeStackTrace, string logFilePath = "")
         {
             _logOpt = logOpt;
             _stackTrace = includeStackTrace;
             _logFilePath = logFilePath;
-            if (logOpt == LoggingOptions.File && string.IsNullOrWhiteSpace(logFilePath))
+            if (logOpt != LoggingOption.File) return;
+            if (string.IsNullOrWhiteSpace(logFilePath))
             {
                 Console.WriteLine("\nYou must give a filepath if choosing File" +
                                   "\nLogging now turned off");
-                _logOpt = LoggingOptions.None;
+                _logOpt = LoggingOption.None;
+            }
+            else if(File.GetAttributes(logFilePath).HasFlag(FileAttributes.Directory))
+            {
+                _logFilePath = Path.Combine(_logFilePath, "LOG.txt");
             }
         }
 
         /// <summary>
-        ///     Logs an exception, based of logging option
+        ///     Logs an exception using the current LoggingOption.
+        ///     Will include stacktrace if selected.
         /// </summary>
         /// <param name="ex"></param>
         public static void Log(Exception ex)
         {
             switch (_logOpt)
             {
-                case LoggingOptions.None:
+                case LoggingOption.None:
                     break;
-                case LoggingOptions.Terminal:
+                case LoggingOption.Terminal:
                     Console.WriteLine($"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}");
                     break;
-                case LoggingOptions.File:
+                case LoggingOption.File:
                     File.AppendAllText(_logFilePath,
                         $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}", Encoding.Default);
                     break;
@@ -53,7 +60,7 @@ namespace RHttpServer.Logging
         }
 
         /// <summary>
-        ///     Log an item using title and message, based of logging option
+        ///     Log an item using title and message using the current LoggingOption.
         /// </summary>
         /// <param name="title"></param>
         /// <param name="message"></param>
@@ -61,12 +68,12 @@ namespace RHttpServer.Logging
         {
             switch (_logOpt)
             {
-                case LoggingOptions.None:
+                case LoggingOption.None:
                     break;
-                case LoggingOptions.Terminal:
+                case LoggingOption.Terminal:
                     Console.WriteLine($"{DateTime.Now.ToString("g")}: {title} - {message}");
                     break;
-                case LoggingOptions.File:
+                case LoggingOption.File:
                     File.AppendAllText(_logFilePath, $"{DateTime.Now.ToString("g")}: {title} - {message}\n",
                         Encoding.Default);
                     break;

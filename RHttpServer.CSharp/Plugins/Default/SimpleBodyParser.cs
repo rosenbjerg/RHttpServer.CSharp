@@ -11,11 +11,18 @@ namespace RHttpServer.Plugins.Default
     /// </summary>
     internal sealed class SimpleBodyParser : RPlugin, IBodyParser
     {
+        private Type _stream = typeof(Stream);
+        private Type _string = typeof(string);
+        private Type _int = typeof(int);
+        private Type _double = typeof(double);
+        private Type _decimal = typeof(decimal);
+        private Type _float = typeof(float);
+        private Type _char = typeof(char);
         public async Task<T> ParseBody<T>(HttpListenerRequest underlyingRequest)
         {
             if (!underlyingRequest.HasEntityBody) return default(T);
             Type t = typeof(T);
-            if (t == typeof(Stream)) return (T)(object)underlyingRequest.InputStream;
+            if (t == _stream) return (T)(object)underlyingRequest.InputStream;
             using (var stream = underlyingRequest.InputStream)
             {
                 using (var reader = new StreamReader(stream, underlyingRequest.ContentEncoding))
@@ -23,35 +30,35 @@ namespace RHttpServer.Plugins.Default
                     string txt;
                     if (t.IsPrimitive)
                     {
-                        if (t == typeof(string))
+                        if (t == _string)
                         {
                             return (T)(object)await reader.ReadToEndAsync();
                         }
-                        if (t == typeof(int))
+                        if (t == _int)
                         {
                             int i;
                             if (int.TryParse(await reader.ReadToEndAsync(), out i)) return (T)(object)i;
                             return default(T);
                         }
-                        if (t == typeof(double))
+                        if (t == _double)
                         {
                             double d;
                             if (double.TryParse(await reader.ReadToEndAsync(), out d)) return (T)(object)d;
                             return default(T);
                         }
-                        if (t == typeof(decimal))
+                        if (t == _decimal)
                         {
                             decimal d;
                             if (decimal.TryParse(await reader.ReadToEndAsync(), out d)) return (T)(object)d;
                             return default(T);
                         }
-                        if (t == typeof(float))
+                        if (t == _float)
                         {
                             float f;
                             if (float.TryParse(await reader.ReadToEndAsync(), out f)) return (T)(object)f;
                             return default(T);
                         }
-                        if (t == typeof(char))
+                        if (t == _char)
                         {
                             char c;
                             if (char.TryParse(await reader.ReadToEndAsync(), out c)) return (T)(object)c;
@@ -60,7 +67,21 @@ namespace RHttpServer.Plugins.Default
                     }
                     switch (underlyingRequest.ContentType)
                     {
+                        case "application/xml":
+                        case "text/xml":
+                            txt = await reader.ReadToEndAsync();
+                            reader.Dispose();
+                            try
+                            {
+                                return UsePlugin<IXmlConverter>().Deserialize<T>(txt);
+                            }
+                            catch (FormatException ex)
+                            {
+                                Logger.Log(ex);
+                                return default(T);
+                            }
                         case "application/json":
+                        case "text/json":
                             txt = await reader.ReadToEndAsync();
                             reader.Dispose();
                             try
@@ -73,9 +94,7 @@ namespace RHttpServer.Plugins.Default
                                 return default(T);
                             }
                         default:
-                            txt = await reader.ReadToEndAsync();
-                            reader.Dispose();
-                            return (T) (object) txt;
+                            return default(T);
                     }
                 }
             }

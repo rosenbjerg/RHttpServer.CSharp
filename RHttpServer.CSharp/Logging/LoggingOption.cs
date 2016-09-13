@@ -3,7 +3,7 @@ namespace RHttpServer.Logging
     /// <summary>
     ///     How the logger should handle calls to Log(..)
     /// </summary>
-    public enum LoggingOptions
+    public enum LoggingOption
     {
         /// <summary>
         ///     Perform no logging whatsoever
