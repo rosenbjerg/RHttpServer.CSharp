@@ -9,7 +9,7 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(3000, 3, "./public");
+            var server = new HttpServer(5000, 3, "./public", true) {CachePublicFiles = false};
 
             server.Get("/", (req, res) => { res.SendString("ok"); });
 
@@ -22,12 +22,7 @@ namespace SimpleRHttpServer
                 pars.Add("data2", "{\"Test\":\"test2\"}");
                 res.RenderPage("./public/index.ecs", pars);
             });
-
-            server.Get("/download", (req, res) =>
-            {
-                res.Download("./ServiceStack.Text.dll");
-            });
-
+            
             server.Get("/render2", (req, res) =>
             {
                 var pars = server.CreateRenderParams();
@@ -62,7 +57,8 @@ namespace SimpleRHttpServer
 
             Logger.Configure(LoggingOption.File, true, "./log.txt");
 
-            server.InitializeDefaultPlugins(renderCaching: false, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
+            server.InitializeDefaultPlugins(renderCaching: true, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
+            server.HttpsEnabled = true;
 
             server.Start(true);
         }

@@ -12,21 +12,13 @@ namespace RHttpServer.Plugins.Default
     /// </summary>
     internal sealed class EcsPageRenderer : RPlugin, IPageRenderer
     {
-        private readonly ConcurrentDictionary<string, string> _cachedPages = new ConcurrentDictionary<string, string>();
-
+        private IFileCacheManager _cacheMan => UsePlugin<IFileCacheManager>();
+            
         /// <summary>
         /// Whether the raw file should be cached so avoid file IO overhead
         /// </summary>
         public bool CachePages { get; set; }
-
-        /// <summary>
-        /// Clears the cache
-        /// </summary>
-        public void EmptyCache()
-        {
-            _cachedPages.Clear();
-        }
-
+        
         /// <summary>
         /// Renders the ecs ecs file at the given path
         /// </summary>
@@ -37,20 +29,21 @@ namespace RHttpServer.Plugins.Default
         {
             if (!filepath.ToLowerInvariant().EndsWith(".ecs"))
                 throw new RHttpServerException("Please use .ecs files when rendering pages");
-            var file = "";
+            byte[] file = null;
             StringBuilder sb;
-            if (CachePages && _cachedPages.TryGetValue(filepath, out file))
-                sb = new StringBuilder(file);
+            if (CachePages && _cacheMan.TryGetFile(filepath, out file))
+                sb = new StringBuilder(Encoding.UTF8.GetString(file));
             else
             {
-                sb = new StringBuilder(File.ReadAllText(filepath));
-                if (CachePages) _cachedPages.TryAdd(filepath, sb.ToString());
+                file = File.ReadAllBytes(filepath);
+                sb = new StringBuilder(Encoding.UTF8.GetString(file));
+                if (CachePages) _cacheMan.TryAdd(filepath, file);
             }
-            InternalRender(sb, parameters, CachePages, _cachedPages);
+            InternalRender(sb, parameters, CachePages, _cacheMan);
             return sb.ToString();
         }
 
-        private static string InternalRender(StringBuilder pageContent, RenderParams parameters, bool cacheOn, ConcurrentDictionary<string, string> cache)
+        private static string InternalRender(StringBuilder pageContent, RenderParams parameters, bool cacheOn, IFileCacheManager cache)
         {
             foreach (var parPair in parameters)
             {
@@ -64,14 +57,15 @@ namespace RHttpServer.Plugins.Default
             {
                 var m = match.ToString().Trim('<', '>', '¤');
                 var rm = $"<¤{m}¤>";
-                var file = "";
+                byte[] file = null;
                 StringBuilder rfile;
-                if (cacheOn && cache.TryGetValue(m, out file))
-                    rfile = new StringBuilder(file);
+                if (cacheOn && cache.TryGetFile(m, out file))
+                    rfile = new StringBuilder(Encoding.UTF8.GetString(file));
                 else if (File.Exists(m))
                 {
-                    rfile = new StringBuilder(File.ReadAllText(m, Encoding.UTF8));
-                    if (cacheOn) cache.TryAdd(m, rfile.ToString());
+                    file = File.ReadAllBytes(m);
+                    rfile = new StringBuilder(Encoding.UTF8.GetString(file));
+                    if (cacheOn) cache.TryAdd(m, file);
                 }
                 else continue;
 

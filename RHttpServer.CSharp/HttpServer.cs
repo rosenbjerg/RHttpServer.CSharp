@@ -22,7 +22,15 @@ namespace RHttpServer
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
-
+        private readonly string[] _indexFiles = 
+        {
+            "index.html",
+            "index.htm",
+            "index.php",
+            "default.html",
+            "default.htm",
+            "default.php"
+        };
         /// <summary>
         ///     Constructs a server instance with given port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
@@ -92,11 +100,19 @@ namespace RHttpServer
         private readonly Thread[] _workers;
         private bool _defPluginsReady;
         private bool _securityOn;
+        private IFileCacheManager _cacheMan;
+        private bool _https;
+        private int _httpsPort;
 
         /// <summary>
         ///     The publicly available folder
         /// </summary>
         public string PublicDir { get; }
+
+        /// <summary>
+        /// Whether public files should be cached if size and extension is set to be cached
+        /// </summary>
+        public bool CachePublicFiles { get; set; }
 
         /// <summary>
         ///     The port that the server is listening on
@@ -124,6 +140,19 @@ namespace RHttpServer
             }
         }
 
+
+
+        /// <summary>
+        ///     Whether the server should respond to https requests <para/>
+        ///     You must have installed a (ssl) certificate to the specified port for it to respond.
+        /// </summary>
+        public bool HttpsEnabled { get; set; }
+
+        /// <summary>
+        ///     The port that https requests are handled through, if enabled
+        /// </summary>
+        public int HttpsPort { get; set; } = 5443;
+
         /// <summary>
         ///     Register a plugin to be used in the server.<para />
         ///     You can replace the default plugins by registering your plugin using the same interface as key before starting the server
@@ -137,14 +166,6 @@ namespace RHttpServer
             plugin.SetPlugins(_rPluginCollection);
             _rPluginCollection.Add(typeof(TPluginInterface), plugin);
         }
-
-        ///// <summary>
-        ///// Returns the registered instance of a plugin
-        ///// </summary>
-        ///// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
-        ///// <param name="key">The interface the plugin instance is registered to and implements</param>
-        ///// <returns>The instance of the registered plugin</returns>
-        //public TPluginInterface GetPlugin<TPluginInterface>() => _rPluginCollection.Use<TPluginInterface>();
 
         /// <summary>
         ///     Add action to handle GET requests to a given route<para />
@@ -193,7 +214,7 @@ namespace RHttpServer
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
         public void Head(string route, Action<RRequest, RResponse> action)
-            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.HEAD);
 
         /// <summary>
         ///     Add action to handle OPTIONS requests to a given route
@@ -206,7 +227,7 @@ namespace RHttpServer
         /// <param name="route">The route to respond to</param>
         /// <param name="action">The action that wil respond to the request</param>
         public void Options(string route, Action<RRequest, RResponse> action)
-            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.DELETE);
+            => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.OPTIONS);
 
         /// <summary>
         ///     Starts the server, and all request handling threads<para />
@@ -218,6 +239,7 @@ namespace RHttpServer
             {
                 InitializeDefaultPlugins();
                 _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "+")}:{Port}/");
+                if (_https) _listener.Prefixes.Add($"https://{(localOnly ? "localhost" : "+")}:{_httpsPort}/");
                 _listener.Start();
                 _listenerThread.Start();
 
@@ -258,20 +280,24 @@ namespace RHttpServer
             if (!_rPluginCollection.IsRegistered<IXmlConverter>())
                 RegisterPlugin<IXmlConverter, ServiceStackXmlConverter>(new ServiceStackXmlConverter());
 
-            if (!_rPluginCollection.IsRegistered<IPageRenderer>())
-                RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
-
             if (!_rPluginCollection.IsRegistered<IHttpSecurityHandler>())
                 RegisterPlugin<IHttpSecurityHandler, SimpleServerProtection>(new SimpleServerProtection());
 
             if (!_rPluginCollection.IsRegistered<IBodyParser>())
                 RegisterPlugin<IBodyParser, SimpleBodyParser>(new SimpleBodyParser());
 
+            if (!_rPluginCollection.IsRegistered<IFileCacheManager>())
+                RegisterPlugin<IFileCacheManager, SimpleFileCacheManager>(new SimpleFileCacheManager());
+
+            if (!_rPluginCollection.IsRegistered<IPageRenderer>())
+                RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
+
             _defPluginsReady = true;
 
             if (securitySettings == null) securitySettings = new SimpleHttpSecuritySettings();
             _rPluginCollection.Use<IHttpSecurityHandler>().Settings = securitySettings;
             _rPluginCollection.Use<IPageRenderer>().CachePages = renderCaching;
+            _cacheMan = _rPluginCollection.Use<IFileCacheManager>();
             SecurityOn = securityOn;
         }
 
@@ -376,10 +402,12 @@ namespace RHttpServer
                 case "DELETE":
                     hm = HttpMethod.DELETE;
                     break;
+                case "OPTIONS":
+                    hm = HttpMethod.OPTIONS;
+                    break;
                 case "HEAD":
-                    context.Response.AddHeader("Server", $"RHttpServer.CSharp/{Version}");
-                    context.Response.Close();
-                    return;
+                    hm = HttpMethod.HEAD;
+                    break;
                 default:
                     Logging.Logger.Log("Invalid HTTP method", $"{method} from {context.Request.LocalEndPoint}");
                     context.Response.StatusCode = (int) HttpStatusCode.NotFound;
@@ -394,25 +422,44 @@ namespace RHttpServer
             {
                 var p = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries).ToList();
                 p.Insert(0, PublicDir);
+                byte[] temp = null;
                 var publicFile = Path.Combine(p.ToArray());
-                if (File.Exists(publicFile))
+                if (CachePublicFiles && _cacheMan.TryGetFile(publicFile, out temp))
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
+                else if (File.Exists(publicFile))
                 {
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                }
-                else if (act != null)
-                {
-                    RRequest req;
-                    RResponse res;
-                    CreateReqRes(context, GetParams(act, route), _rPluginCollection, out req, out res);
-                    act.Action(req, res);
+                    temp = File.ReadAllBytes(publicFile);
+                    var type = "";
+                    if (!RResponse.MimeTypes.TryGetValue(Path.GetExtension(publicFile).ToLowerInvariant(), out type))
+                        type = "application/octet-stream";
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, type);
+                    if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
+                    return;
                 }
                 else
                 {
-                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-                    context.Response.Close();
+                    var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
+                    if (CachePublicFiles)
+                    {
+                        foreach (var iFile in pfiles) if (_cacheMan.TryGetFile(iFile, out temp)) break;
+                        if (temp != null)
+                        {
+                            new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
+                            return;
+                        }
+                    }
+                    publicFile = pfiles.FirstOrDefault(File.Exists);
+
+                    if (!string.IsNullOrEmpty(publicFile))
+                    {
+                        temp = File.ReadAllBytes(publicFile);
+                        new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
+                        if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
+                        return;
+                    }
                 }
             }
-            else if (act != null)
+            if (act != null)
             {
                 RRequest req;
                 RResponse res;

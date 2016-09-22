@@ -12,6 +12,7 @@ namespace RHttpServer.Logging
         private static LoggingOption _logOpt = LoggingOption.None;
         private static string _logFilePath;
         private static bool _stackTrace;
+        private static object _fileLock = new object();
 
         /// <summary>
         ///     Method used to configure the logger.
@@ -32,7 +33,7 @@ namespace RHttpServer.Logging
                                   "\nLogging now turned off");
                 _logOpt = LoggingOption.None;
             }
-            else if(File.GetAttributes(logFilePath).HasFlag(FileAttributes.Directory))
+            else if((Directory.Exists(logFilePath) || File.Exists(logFilePath)) && File.GetAttributes(logFilePath).HasFlag(FileAttributes.Directory))
             {
                 _logFilePath = Path.Combine(_logFilePath, "LOG.txt");
             }
@@ -53,8 +54,12 @@ namespace RHttpServer.Logging
                     Console.WriteLine($"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}");
                     break;
                 case LoggingOption.File:
-                    File.AppendAllText(_logFilePath,
-                        $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}", Encoding.Default);
+                    lock (_fileLock)
+                    {
+                        File.AppendAllText(_logFilePath,
+                            $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}", Encoding.Default);
+
+                    }
                     break;
             }
         }
@@ -74,8 +79,11 @@ namespace RHttpServer.Logging
                     Console.WriteLine($"{DateTime.Now.ToString("g")}: {title} - {message}");
                     break;
                 case LoggingOption.File:
-                    File.AppendAllText(_logFilePath, $"{DateTime.Now.ToString("g")}: {title} - {message}\n",
-                        Encoding.Default);
+                    lock (_fileLock)
+                    {
+                        File.AppendAllText(_logFilePath, $"{DateTime.Now.ToString("g")}: {title} - {message}\n",
+                            Encoding.Default);
+                    }
                     break;
             }
         }

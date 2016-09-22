@@ -12,13 +12,7 @@ namespace RHttpServer.Plugins
         ///     Bool specifying whether the page renderer should cache pages
         /// </summary>
         bool CachePages { get; set; }
-
-        /// <summary>
-        ///     Method to call when it is needed to empty the page cache.
-        ///     Useful if the page files on the harddrive is being modified on runtime.
-        /// </summary>
-        void EmptyCache();
-
+        
         /// <summary>
         ///     Renders the page found at path using the parameters passed.
         /// </summary>

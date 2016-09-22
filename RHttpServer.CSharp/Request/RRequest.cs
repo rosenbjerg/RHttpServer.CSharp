@@ -16,28 +16,29 @@ namespace RHttpServer.Request
         {
             UnderlyingRequest = req;
             Params = par;
-            Cookies = new RCookies(req.Cookies);
-            Headers = new RHeaders(req.Headers);
-            Queries = new RQueries(req.QueryString);
+
             _bodyParser = pluginCollection.Use<IBodyParser>();
         }
 
         /// <summary>
         ///     The query elements of the request
         /// </summary>
-        public RQueries Queries { get; set; }
+        public RQueries Queries => _queries ?? (_queries = new RQueries(UnderlyingRequest.QueryString));
+        private RQueries _queries;
 
         private readonly IBodyParser _bodyParser;
 
         /// <summary>
         ///     The headers contained in the request
         /// </summary>
-        public RHeaders Headers { get; set; }
+        public RHeaders Headers => _headers ?? (_headers = new RHeaders(UnderlyingRequest.Headers));
+        private RHeaders _headers;
 
         /// <summary>
         ///     The cookies contained in the request
         /// </summary>
-        public RCookies Cookies { get; }
+        public RCookies Cookies => _cookies ?? (_cookies = new RCookies(UnderlyingRequest.Cookies));
+        private RCookies _cookies;
 
         /// <summary>
         ///     The url parameters of the request

@@ -53,6 +53,7 @@
     <Compile Include="Plugins\Default\ServiceStackXmlConverter.cs" />
     <Compile Include="Plugins\Default\SimpleBodyParser.cs" />
     <Compile Include="Plugins\IBodyParser.cs" />
+    <Compile Include="Plugins\IFileCacheManager.cs" />
     <Compile Include="Plugins\IHttpSecurityHandler.cs" />
     <Compile Include="Plugins\IHttpSecuritySettings.cs" />
     <Compile Include="Plugins\IJsonConverter.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="Plugins\IXmlConverter.cs" />
     <Compile Include="Plugins\RPlugin.cs" />
     <Compile Include="Plugins\RPluginCollection.cs" />
+    <Compile Include="Plugins\Default\SimpleFileCacheManager.cs" />
     <Compile Include="Request\RQueries.cs" />
     <Compile Include="RHttpServerException.cs" />
     <Compile Include="RouteTree.cs" />

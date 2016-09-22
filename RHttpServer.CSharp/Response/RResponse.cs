@@ -12,7 +12,7 @@ namespace RHttpServer.Response
     /// </summary>
     public class RResponse
     {
-        protected static readonly IDictionary<string, string> MimeTypes =
+        internal static readonly IDictionary<string, string> MimeTypes =
             new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
             {
                 #region extension to MIME type list
@@ -123,25 +123,60 @@ namespace RHttpServer.Response
         /// <param name="redirectPath">The path or url to redirect to</param>
         public void Redirect(string redirectPath)
         {
+            if (Closed) throw new RHttpServerException("You can only send the response once");
             UnderlyingResponse.Redirect(redirectPath);
             UnderlyingResponse.Close();
+            Closed = true;
         }
 
         /// <summary>
         ///     Sends data as text
         /// </summary>
         /// <param name="data">The text data to send</param>
+        /// <param name="contentType">The mime type of the content</param>
         /// <param name="status">The status code for the response</param>
-        public void SendString(string data, int status = (int)HttpStatusCode.OK)
+        public void SendString(string data, string contentType = "text/plain", int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(data);
-                UnderlyingResponse.ContentType = "text/plain";
+                UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
+                UnderlyingResponse.OutputStream.Flush();
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+            }
+            catch (Exception ex)
+            {
+                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                Logging.Logger.Log(ex);
+                if (HttpServer.ThrowExceptions) throw;
+            }
+            finally
+            {
+                UnderlyingResponse.OutputStream.Close();
+                UnderlyingResponse.Close();
+                Closed = true;
+            }
+        }
+
+        /// <summary>
+        ///     Sends data as bytes
+        /// </summary>
+        /// <param name="data">The text data to send</param>
+        /// <param name="contentType">The mime type of the content</param>
+        /// <param name="status">The status code for the response</param>
+        public void SendBytes(byte[] data, string contentType = "application/octet-stream", int status = (int)HttpStatusCode.OK)
+        {
+            if (Closed) throw new RHttpServerException("You can only send the response once");
+            try
+            {
+                UnderlyingResponse.StatusCode = status;
+                UnderlyingResponse.ContentType = contentType;
+                UnderlyingResponse.ContentLength64 = data.Length;
+                UnderlyingResponse.OutputStream.Write(data, 0, data.Length);
                 UnderlyingResponse.OutputStream.Flush();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }

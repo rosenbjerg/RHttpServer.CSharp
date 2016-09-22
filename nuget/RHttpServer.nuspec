@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.2.8</version>
+    <version>1.0.2.11</version>
     <title>RHS - RHttpServer</title>
     <authors>Rosenbjerg Softworks</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -18,7 +18,7 @@ A simple plugin for dynamic page rendering is included, which offers the ability
 The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
-    <releaseNotes>Added url query handling, file upload and other improvements</releaseNotes>
+    <releaseNotes>Http Options method bug fix</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>RHttpServer rhs http server api rendering </tags>
   <dependencies>
