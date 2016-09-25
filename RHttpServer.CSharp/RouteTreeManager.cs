@@ -1,4 +1,5 @@
 using System;
+using ServiceStack;
 
 namespace RHttpServer
 {
@@ -73,7 +74,6 @@ namespace RHttpServer
 
             var split = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
             var len = split.Length;
-
             for (var i = 0; i < len; i++)
             {
                 branch = tree.GetBranch(split[i]);
@@ -89,7 +89,7 @@ namespace RHttpServer
                     tree = branch.Stem;
                 }
                 generalFallback = true;
-                return tree?.General.Action;
+                return tree?.General?.Action;
             }
             generalFallback = tree?.Route == "*";
             return tree?.Action;

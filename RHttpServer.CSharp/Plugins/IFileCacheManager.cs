@@ -26,7 +26,7 @@ namespace RHttpServer.Plugins
         /// The default cache manager can only cache text files, not binary.
         /// All extension must be lowercase
         /// </summary>
-        IReadOnlyList<string> CacheAllowedFileExtension { get; }
+        HashSet<string> CacheAllowedFileExtension { get; }
 
         /// <summary>
         /// Returns to file content to out parameter if found

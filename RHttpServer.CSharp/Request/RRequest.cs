@@ -89,7 +89,7 @@ namespace RHttpServer.Request
                         var buffer = new byte[0x4000];
 
                         int nbytes;
-                        while ((nbytes = stream.Read(buffer, 0, buffer.Length)) > 0)
+                        while ((nbytes = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
                             await file.WriteAsync(buffer, 0, nbytes);
                         }

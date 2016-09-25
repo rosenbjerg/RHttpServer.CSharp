@@ -39,7 +39,7 @@ namespace RHttpServer
         /// <param name="port">The port that the server should listen on</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
         /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
-        public HttpServer(int port, int requestHandlerThreads = 2, string path = "", bool throwExceptions = false)
+        public HttpServer(int port, int requestHandlerThreads, string path = "", bool throwExceptions = false)
         {
             if (requestHandlerThreads < 1)
             {
@@ -47,7 +47,6 @@ namespace RHttpServer
                 Logging.Logger.Log("Thread setting", "Minimum 1 request-handler threads");
             }
             ThrowExceptions = throwExceptions;
-            if (path.StartsWith("./")) path = Path.Combine(Environment.CurrentDirectory, path.Replace("./", ""));
             PublicDir = path;
             Port = port;
             _workers = new Thread[requestHandlerThreads];
@@ -55,17 +54,17 @@ namespace RHttpServer
             _stop = new ManualResetEventSlim(false);
             _ready = new ManualResetEventSlim(false);
             _listener = new HttpListener();
-            _listenerThread = new Thread(HandleRequests);
+            _listenerThread = new Thread(HandleRequests) { Name = "ListenerThread" };
         }
 
         /// <summary>
-        ///     Constructs a server instance with automatically found port and using the given path as public folder.
+        ///     Constructs a server instance with an automatically found port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
         /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
-        public HttpServer(int requestHandlerThreads = 2, string path = "", bool throwExceptions = false)
+        public HttpServer(int requestHandlerThreads, string path = "", bool throwExceptions = false)
         {
             if (requestHandlerThreads < 1)
             {
@@ -73,21 +72,18 @@ namespace RHttpServer
                 Logging.Logger.Log("Thread setting", "Minimum 1 request-handler threads");
             }
             ThrowExceptions = throwExceptions;
-            if (path.StartsWith("./")) path = path.Replace("./", Environment.CurrentDirectory);
             PublicDir = path;
             //get an empty port
             var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
             Port = ((IPEndPoint) l.LocalEndpoint).Port;
             l.Stop();
-            if (path.StartsWith("./")) path = Path.Combine(Environment.CurrentDirectory, path.Replace("./", ""));
-            PublicDir = path;
             _workers = new Thread[requestHandlerThreads];
             _queue = new ConcurrentQueue<HttpListenerContext>();
             _stop = new ManualResetEventSlim(false);
             _ready = new ManualResetEventSlim(false);
             _listener = new HttpListener();
-            _listenerThread = new Thread(HandleRequests);
+            _listenerThread = new Thread(HandleRequests) { Name = "ListenerThread" };
         }
 
 
@@ -101,8 +97,6 @@ namespace RHttpServer
         private bool _defPluginsReady;
         private bool _securityOn;
         private IFileCacheManager _cacheMan;
-        private bool _https;
-        private int _httpsPort;
 
         /// <summary>
         ///     The publicly available folder
@@ -144,7 +138,7 @@ namespace RHttpServer
 
         /// <summary>
         ///     Whether the server should respond to https requests <para/>
-        ///     You must have installed a (ssl) certificate to the specified port for it to respond.
+        ///     You must have a (ssl) certificate installed to the specified port for it to respond.
         /// </summary>
         public bool HttpsEnabled { get; set; }
 
@@ -239,13 +233,13 @@ namespace RHttpServer
             {
                 InitializeDefaultPlugins();
                 _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "+")}:{Port}/");
-                if (_https) _listener.Prefixes.Add($"https://{(localOnly ? "localhost" : "+")}:{_httpsPort}/");
+                if (HttpsEnabled) _listener.Prefixes.Add($"https://{(localOnly ? "localhost" : "+")}:{HttpsPort}/");
                 _listener.Start();
                 _listenerThread.Start();
 
                 for (var i = 0; i < _workers.Length; i++)
                 {
-                    _workers[i] = new Thread(Worker);
+                    _workers[i] = new Thread(Worker) { Name = $"RequestHandler #{i}"};
                     _workers[i].Start();
                 }
                 Console.WriteLine("RHttpServer v. {0} started", Version);
@@ -333,7 +327,7 @@ namespace RHttpServer
                 {
                     var context = _listener.BeginGetContext(ContextReady, null);
 
-                    if (0 == WaitHandle.WaitAny(new[] {_stop.WaitHandle, context.AsyncWaitHandle}))
+                    if (0 == WaitHandle.WaitAny(new[] { _stop.WaitHandle, context.AsyncWaitHandle }))
                         return;
                 }
             }
@@ -418,15 +412,18 @@ namespace RHttpServer
             bool generalFallback;
            
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
-            if (generalFallback && !string.IsNullOrWhiteSpace(PublicDir))
+            if ((generalFallback || act == null) && !string.IsNullOrWhiteSpace(PublicDir))
             {
                 var p = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries).ToList();
                 p.Insert(0, PublicDir);
                 byte[] temp = null;
                 var publicFile = Path.Combine(p.ToArray());
                 if (CachePublicFiles && _cacheMan.TryGetFile(publicFile, out temp))
+                {
                     new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
-                else if (File.Exists(publicFile))
+                    return;
+                }
+                if (File.Exists(publicFile))
                 {
                     temp = File.ReadAllBytes(publicFile);
                     var type = "";
@@ -436,27 +433,24 @@ namespace RHttpServer
                     if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
                     return;
                 }
-                else
+                var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
+                if (CachePublicFiles)
                 {
-                    var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
-                    if (CachePublicFiles)
+                    foreach (var iFile in pfiles) if (_cacheMan.TryGetFile(iFile, out temp)) break;
+                    if (temp != null)
                     {
-                        foreach (var iFile in pfiles) if (_cacheMan.TryGetFile(iFile, out temp)) break;
-                        if (temp != null)
-                        {
-                            new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
-                            return;
-                        }
-                    }
-                    publicFile = pfiles.FirstOrDefault(File.Exists);
-
-                    if (!string.IsNullOrEmpty(publicFile))
-                    {
-                        temp = File.ReadAllBytes(publicFile);
                         new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
-                        if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
                         return;
                     }
+                }
+                publicFile = pfiles.FirstOrDefault(File.Exists);
+
+                if (!string.IsNullOrEmpty(publicFile))
+                {
+                    temp = File.ReadAllBytes(publicFile);
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
+                    if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
+                    return;
                 }
             }
             if (act != null)

@@ -27,7 +27,7 @@ namespace RHttpServer.Plugins.Default
             return _size + filesizeBytes <= MaxFileSizeBytes;
         }
         
-        public IReadOnlyList<string> CacheAllowedFileExtension { get; } = new List<string>
+        public HashSet<string> CacheAllowedFileExtension { get; } = new HashSet<string>
         {
             ".html", ".htm", ".xhtml",
             ".ecs",  ".js",  ".css",

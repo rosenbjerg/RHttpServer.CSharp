@@ -135,7 +135,7 @@ namespace RHttpServer.Response
         /// <param name="data">The text data to send</param>
         /// <param name="contentType">The mime type of the content</param>
         /// <param name="status">The status code for the response</param>
-        public void SendString(string data, string contentType = "text/plain", int status = (int)HttpStatusCode.OK)
+        public async void SendString(string data, string contentType = "text/plain", int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -144,8 +144,8 @@ namespace RHttpServer.Response
                 var bytes = Encoding.UTF8.GetBytes(data);
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = bytes.Length;
-                UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
-                UnderlyingResponse.OutputStream.Flush();
+                await UnderlyingResponse.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+                await UnderlyingResponse.OutputStream.FlushAsync();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
@@ -168,7 +168,7 @@ namespace RHttpServer.Response
         /// <param name="data">The text data to send</param>
         /// <param name="contentType">The mime type of the content</param>
         /// <param name="status">The status code for the response</param>
-        public void SendBytes(byte[] data, string contentType = "application/octet-stream", int status = (int)HttpStatusCode.OK)
+        public async void SendBytes(byte[] data, string contentType = "application/octet-stream", int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -176,8 +176,8 @@ namespace RHttpServer.Response
                 UnderlyingResponse.StatusCode = status;
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = data.Length;
-                UnderlyingResponse.OutputStream.Write(data, 0, data.Length);
-                UnderlyingResponse.OutputStream.Flush();
+                await UnderlyingResponse.OutputStream.WriteAsync(data, 0, data.Length);
+                await UnderlyingResponse.OutputStream.FlushAsync();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
@@ -199,7 +199,7 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="data">The object to be serialized and send</param>
         /// <param name="status">The status code for the response</param>
-        public void SendJson(object data, int status = (int)HttpStatusCode.OK)
+        public async void SendJson(object data, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -208,8 +208,8 @@ namespace RHttpServer.Response
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
                 UnderlyingResponse.ContentType = "application/json";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
-                UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
-                UnderlyingResponse.OutputStream.Flush();
+                await UnderlyingResponse.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+                await UnderlyingResponse.OutputStream.FlushAsync();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
@@ -231,17 +231,17 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="data">The object to be serialized and send</param>
         /// <param name="status">The status code for the response</param>
-        public void SendXml(object data, int status = (int)HttpStatusCode.OK)
+        public async void SendXml(object data, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IXmlConverter>().Serialize(data));
-                UnderlyingResponse.ContentType = "application/json";
+                UnderlyingResponse.ContentType = "application/xml";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
-                UnderlyingResponse.OutputStream.Write(bytes, 0, bytes.Length);
-                UnderlyingResponse.OutputStream.Flush();
+                await UnderlyingResponse.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+                await UnderlyingResponse.OutputStream.FlushAsync();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
@@ -264,7 +264,7 @@ namespace RHttpServer.Response
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public void SendFile(string filepath, string mime = null, int status = (int)HttpStatusCode.OK)
+        public async void SendFile(string filepath, string mime = null, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -284,10 +284,12 @@ namespace RHttpServer.Response
                     UnderlyingResponse.ContentLength64 = len;
 
                     var buffer = len < 0x4000 ? new byte[len] : new byte[0x4000];
+
                     int nbytes;
-                    while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
-                        UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
-                    UnderlyingResponse.OutputStream.Flush();
+                    var stream = UnderlyingResponse.OutputStream;
+                    while ((nbytes = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        await stream.WriteAsync(buffer, 0, nbytes);
+                    await UnderlyingResponse.OutputStream.FlushAsync();
                 }
             }
             catch (Exception ex)
@@ -311,7 +313,7 @@ namespace RHttpServer.Response
         /// <param name="filename">The name filename the client receives the file with, defaults to using the actual filename</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public void Download(string filepath, string filename = "", string mime = null, int status = (int)HttpStatusCode.OK)
+        public async void Download(string filepath, string filename = "", string mime = null, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -332,9 +334,10 @@ namespace RHttpServer.Response
 
                     var buffer = len < 0x4000 ? new byte[len] : new byte[0x4000];
                     int nbytes;
-                    while ((nbytes = input.Read(buffer, 0, buffer.Length)) > 0)
-                        UnderlyingResponse.OutputStream.Write(buffer, 0, nbytes);
-                    UnderlyingResponse.OutputStream.Flush();
+                    var stream = UnderlyingResponse.OutputStream;
+                    while ((nbytes = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        await stream.WriteAsync(buffer, 0, nbytes);
+                    await UnderlyingResponse.OutputStream.FlushAsync();
                 }
                 
             }
@@ -358,7 +361,7 @@ namespace RHttpServer.Response
         /// <param name="pagefilepath">The path of the file to be rendered</param>
         /// <param name="parameters">The parameter collection used when replacing data</param>
         /// <param name="status">The status code for the response</param>
-        public void RenderPage(string pagefilepath, RenderParams parameters, int status = (int)HttpStatusCode.OK)
+        public async void RenderPage(string pagefilepath, RenderParams parameters, int status = (int)HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -367,8 +370,8 @@ namespace RHttpServer.Response
                 var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
                 UnderlyingResponse.ContentType = "text/html";
                 UnderlyingResponse.ContentLength64 = data.Length;
-                UnderlyingResponse.OutputStream.Write(data, 0, data.Length);
-                UnderlyingResponse.OutputStream.Flush();
+                await UnderlyingResponse.OutputStream.WriteAsync(data, 0, data.Length);
+                await UnderlyingResponse.OutputStream.FlushAsync();
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)

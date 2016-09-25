@@ -12,7 +12,7 @@ namespace RHttpServer.Logging
         private static LoggingOption _logOpt = LoggingOption.None;
         private static string _logFilePath;
         private static bool _stackTrace;
-        private static object _fileLock = new object();
+        private static readonly object _fileLock = new object();
 
         /// <summary>
         ///     Method used to configure the logger.

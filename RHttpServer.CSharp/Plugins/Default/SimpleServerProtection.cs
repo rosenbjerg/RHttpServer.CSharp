@@ -14,8 +14,9 @@ namespace RHttpServer.Plugins.Default
     {
         internal SimpleServerProtection()
         {
-            _visitorMaintainerThread = new Thread(MaintainVisitorList);
-            _blacklistMaintainerThread = new Thread(MaintainBlacklist);
+            _visitorMaintainerThread = new Thread(MaintainVisitorList) { Name = "VisitorMaintainer" };
+            _blacklistMaintainerThread = new Thread(MaintainBlacklist) { Name = "BlacklistMaintainer" };
+
         }
 
         private readonly ConcurrentDictionary<string, byte> _blacklist = new ConcurrentDictionary<string, byte>();

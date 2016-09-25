@@ -30,7 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\RHttpServer.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\RHttpServer.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ServiceStack.Text, Version=4.5.0.0, Culture=neutral, processorArchitecture=MSIL">

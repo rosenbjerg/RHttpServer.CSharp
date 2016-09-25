@@ -45,9 +45,12 @@ namespace RHttpServer.Plugins.Default
 
         private static string InternalRender(StringBuilder pageContent, RenderParams parameters, bool cacheOn, IFileCacheManager cache)
         {
-            foreach (var parPair in parameters)
+            if (parameters != null)
             {
-                pageContent.Replace(parPair.Key, parPair.Value);
+                foreach (var parPair in parameters)
+                {
+                    pageContent.Replace(parPair.Key, parPair.Value);
+                }
             }
             var matches = Regex.Matches(pageContent.ToString(),
                 @"(?i)<¤([a-z]:|.)?[\\\/\w]+.(html|ecs|js|css|txt)¤>", 

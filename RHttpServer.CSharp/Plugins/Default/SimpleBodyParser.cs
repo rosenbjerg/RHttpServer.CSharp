@@ -11,13 +11,14 @@ namespace RHttpServer.Plugins.Default
     /// </summary>
     internal sealed class SimpleBodyParser : RPlugin, IBodyParser
     {
-        private Type _stream = typeof(Stream);
-        private Type _string = typeof(string);
-        private Type _int = typeof(int);
-        private Type _double = typeof(double);
-        private Type _decimal = typeof(decimal);
-        private Type _float = typeof(float);
-        private Type _char = typeof(char);
+        private readonly Type _stream = typeof(Stream);
+        private readonly Type _string = typeof(string);
+        private readonly Type _int = typeof(int);
+        private readonly Type _double = typeof(double);
+        private readonly Type _decimal = typeof(decimal);
+        private readonly Type _float = typeof(float);
+        private readonly Type _char = typeof(char);
+
         public async Task<T> ParseBody<T>(HttpListenerRequest underlyingRequest)
         {
             if (!underlyingRequest.HasEntityBody) return default(T);
