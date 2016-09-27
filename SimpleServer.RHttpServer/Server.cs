@@ -1,7 +1,10 @@
-﻿using RHttpServer;
+﻿using System;
+using System.Linq;
+using RHttpServer;
 using RHttpServer.Logging;
 using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
+using RHttpServer.Response;
 
 namespace SimpleRHttpServer
 {
@@ -9,7 +12,7 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(5000, 3, "./public", true) {CachePublicFiles = true};
+            var server = new HttpServer(5000, 3, "./public", true) {CachePublicFiles = false};
 
             //server.Get("/", (req, res) => { res.SendString("ok"); });
 
@@ -17,9 +20,11 @@ namespace SimpleRHttpServer
 
             server.Get("/render", (req, res) =>
             {
-                var pars = server.CreateRenderParams();
-                pars.Add("data1", "test1");
-                pars.Add("data2", "{\"Test\":\"test2\"}");
+                var pars = new RenderParams
+                {
+                    {"data1", "test1"},
+                    { "data2", "{\"Test\":\"test2\"}"}
+                };
                 res.RenderPage("./public/index.ecs", pars);
             });
 
@@ -38,6 +43,16 @@ namespace SimpleRHttpServer
             //    pars.Add("data2", "{\"Test\":\"test2\"}");
             //    res.RenderPage("./public/index.ecs", pars);
             //});
+
+            server.Post("/postdata", (req, res) =>
+            {
+                var v = new {S = "", Daw = 39};
+                req.SaveBodyToFile("./public/down", s => "temptemp" + s);
+                //var reas = req.GetBodyPostFormData();
+                //var fname = reas["fname"];
+                //var lname = reas["lname"];
+                res.SendString($"Hi");
+            });
 
             //server.Get("/:par1/:par2", (req, res) =>
             //{
@@ -58,7 +73,7 @@ namespace SimpleRHttpServer
             //Logger.Configure(LoggingOption.File, true, "./log.txt");
 
             //server.InitializeDefaultPlugins(renderCaching: true, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
-            //server.HttpsEnabled = true;
+            server.HttpsEnabled = true;
 
             server.Start(true);
         }

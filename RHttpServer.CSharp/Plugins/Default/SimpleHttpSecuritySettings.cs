@@ -6,7 +6,7 @@
     public sealed class SimpleHttpSecuritySettings : RPlugin, IHttpSecuritySettings
     {
         /// <summary>
-        /// Default settings for security
+        ///     Default settings for security
         /// </summary>
         /// <param name="sessLenSec"></param>
         /// <param name="maxReqsPrSess"></param>

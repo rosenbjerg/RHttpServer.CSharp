@@ -21,7 +21,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <DocumentationFile>bin\Debug\RHttpServer.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\RHttpServer.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -62,7 +62,16 @@
     <Compile Include="Plugins\RPlugin.cs" />
     <Compile Include="Plugins\RPluginCollection.cs" />
     <Compile Include="Plugins\Default\SimpleFileCacheManager.cs" />
+    <Compile Include="Request\MultiPartFormParsing\BinaryStreamStack.cs" />
+    <Compile Include="Request\MultiPartFormParsing\FilePart.cs" />
+    <Compile Include="Request\MultiPartFormParsing\MultipartFormDataParser.cs" />
+    <Compile Include="Request\MultiPartFormParsing\MultipartParseException.cs" />
+    <Compile Include="Request\MultiPartFormParsing\MultipartStreamPart.cs" />
+    <Compile Include="Request\MultiPartFormParsing\ParameterPart.cs" />
+    <Compile Include="Request\MultiPartFormParsing\RebufferableBinaryReader.cs" />
+    <Compile Include="Request\MultiPartFormParsing\SubsequenceFinder.cs" />
     <Compile Include="Request\RQueries.cs" />
+    <Compile Include="Request\MultiPartFormParsing\StreamingMultipartFormDataParser.cs" />
     <Compile Include="RHttpServerException.cs" />
     <Compile Include="RouteTree.cs" />
     <Compile Include="RouteTreeManager.cs" />

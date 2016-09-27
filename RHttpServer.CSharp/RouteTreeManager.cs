@@ -1,5 +1,4 @@
 using System;
-using ServiceStack;
 
 namespace RHttpServer
 {
@@ -7,10 +6,10 @@ namespace RHttpServer
     {
         private readonly RouteTree _deleteTree = new RouteTree("", null);
         private readonly RouteTree _getTree = new RouteTree("", null);
-        private readonly RouteTree _postTree = new RouteTree("", null);
-        private readonly RouteTree _putTree = new RouteTree("", null);
         private readonly RouteTree _headTree = new RouteTree("", null);
         private readonly RouteTree _optionsTree = new RouteTree("", null);
+        private readonly RouteTree _postTree = new RouteTree("", null);
+        private readonly RouteTree _putTree = new RouteTree("", null);
 
 
         internal bool AddRoute(RHttpAction action, HttpMethod method)
@@ -80,9 +79,9 @@ namespace RHttpServer
                 if (branch != null) tree = branch;
                 else break;
             }
-            if ((branch == null || tree.Action == null) && len != 0)
+            if (((branch == null) || (tree.Action == null)) && (len != 0))
             {
-                while (branch == null || branch.Route != "*" || tree.Action == null)
+                while ((branch == null) || (branch.Route != "*") || (tree.Action == null))
                 {
                     branch = tree;
                     if (branch.Stem == null) break;

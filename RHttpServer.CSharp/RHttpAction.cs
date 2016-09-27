@@ -34,9 +34,7 @@ namespace RHttpServer
             if (step > RouteLength - 1) return false;
             var rs = RouteTree[step];
             foreach (var s in route)
-            {
                 if (s == rs) return true;
-            }
             return false;
         }
     }

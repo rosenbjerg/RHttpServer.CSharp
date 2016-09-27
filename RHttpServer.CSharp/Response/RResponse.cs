@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using RHttpServer.Logging;
 using RHttpServer.Plugins;
 
 namespace RHttpServer.Response
 {
     /// <summary>
     ///     Class representing the reponse to a clients request
+    ///     All 
     /// </summary>
     public class RResponse
     {
+        private const int BufferSize = 0x1000;
+
         internal static readonly IDictionary<string, string> MimeTypes =
             new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
             {
@@ -102,8 +106,8 @@ namespace RHttpServer.Response
 
 
         /// <summary>
-        ///     The underlying HttpListenerResponse
-        ///     This implementation of RResponse is leaky, to avoid limiting you
+        ///     The underlying HttpListenerResponse <para/>
+        ///     The implementation of RResponse is leaky, to avoid limiting you
         /// </summary>
         public HttpListenerResponse UnderlyingResponse { get; }
 
@@ -135,7 +139,8 @@ namespace RHttpServer.Response
         /// <param name="data">The text data to send</param>
         /// <param name="contentType">The mime type of the content</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendString(string data, string contentType = "text/plain", int status = (int)HttpStatusCode.OK)
+        public async void SendString(string data, string contentType = "text/plain",
+            int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -150,8 +155,8 @@ namespace RHttpServer.Response
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally
@@ -168,7 +173,8 @@ namespace RHttpServer.Response
         /// <param name="data">The text data to send</param>
         /// <param name="contentType">The mime type of the content</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendBytes(byte[] data, string contentType = "application/octet-stream", int status = (int)HttpStatusCode.OK)
+        public async void SendBytes(byte[] data, string contentType = "application/octet-stream",
+            int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -182,8 +188,8 @@ namespace RHttpServer.Response
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally
@@ -199,7 +205,7 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="data">The object to be serialized and send</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendJson(object data, int status = (int)HttpStatusCode.OK)
+        public async void SendJson(object data, int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -215,7 +221,7 @@ namespace RHttpServer.Response
             catch (Exception ex)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally
@@ -231,7 +237,7 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="data">The object to be serialized and send</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendXml(object data, int status = (int)HttpStatusCode.OK)
+        public async void SendXml(object data, int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -246,8 +252,8 @@ namespace RHttpServer.Response
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally
@@ -264,7 +270,7 @@ namespace RHttpServer.Response
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendFile(string filepath, string mime = null, int status = (int)HttpStatusCode.OK)
+        public async void SendFile(string filepath, string mime = null, int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -283,7 +289,7 @@ namespace RHttpServer.Response
                     var len = input.Length;
                     UnderlyingResponse.ContentLength64 = len;
 
-                    var buffer = len < 0x4000 ? new byte[len] : new byte[0x4000];
+                    var buffer = len < BufferSize ? new byte[len] : new byte[BufferSize];
 
                     int nbytes;
                     var stream = UnderlyingResponse.OutputStream;
@@ -295,7 +301,7 @@ namespace RHttpServer.Response
             catch (Exception ex)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally
@@ -313,7 +319,8 @@ namespace RHttpServer.Response
         /// <param name="filename">The name filename the client receives the file with, defaults to using the actual filename</param>
         /// <param name="mime">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
         /// <param name="status">The status code for the response</param>
-        public async void Download(string filepath, string filename = "", string mime = null, int status = (int)HttpStatusCode.OK)
+        public async void Download(string filepath, string filename = "", string mime = null,
+            int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -326,25 +333,26 @@ namespace RHttpServer.Response
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
                 UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
-                UnderlyingResponse.AddHeader("Content-disposition", "attachment; filename=" + (string.IsNullOrWhiteSpace(filename) ? Path.GetFileName(filepath) : filename));
+                UnderlyingResponse.AddHeader("Content-disposition",
+                    "attachment; filename=" +
+                    (string.IsNullOrWhiteSpace(filename) ? Path.GetFileName(filepath) : filename));
                 using (var input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var len = input.Length;
                     UnderlyingResponse.ContentLength64 = len;
 
-                    var buffer = len < 0x4000 ? new byte[len] : new byte[0x4000];
+                    var buffer = len < BufferSize ? new byte[len] : new byte[BufferSize];
                     int nbytes;
                     var stream = UnderlyingResponse.OutputStream;
                     while ((nbytes = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         await stream.WriteAsync(buffer, 0, nbytes);
                     await UnderlyingResponse.OutputStream.FlushAsync();
                 }
-                
             }
             catch (Exception ex)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally
@@ -361,7 +369,7 @@ namespace RHttpServer.Response
         /// <param name="pagefilepath">The path of the file to be rendered</param>
         /// <param name="parameters">The parameter collection used when replacing data</param>
         /// <param name="status">The status code for the response</param>
-        public async void RenderPage(string pagefilepath, RenderParams parameters, int status = (int)HttpStatusCode.OK)
+        public async void RenderPage(string pagefilepath, RenderParams parameters, int status = (int) HttpStatusCode.OK)
         {
             if (Closed) throw new RHttpServerException("You can only send the response once");
             try
@@ -377,7 +385,7 @@ namespace RHttpServer.Response
             catch (Exception ex)
             {
                 UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logging.Logger.Log(ex);
+                Logger.Log(ex);
                 if (HttpServer.ThrowExceptions) throw;
             }
             finally

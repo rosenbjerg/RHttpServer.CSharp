@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using RHttpServer.Logging;
 
 namespace RHttpServer.Plugins.Default
 {
@@ -14,9 +15,8 @@ namespace RHttpServer.Plugins.Default
     {
         internal SimpleServerProtection()
         {
-            _visitorMaintainerThread = new Thread(MaintainVisitorList) { Name = "VisitorMaintainer" };
-            _blacklistMaintainerThread = new Thread(MaintainBlacklist) { Name = "BlacklistMaintainer" };
-
+            _visitorMaintainerThread = new Thread(MaintainVisitorList) {Name = "VisitorMaintainer"};
+            _blacklistMaintainerThread = new Thread(MaintainBlacklist) {Name = "BlacklistMaintainer"};
         }
 
         private readonly ConcurrentDictionary<string, byte> _blacklist = new ConcurrentDictionary<string, byte>();
@@ -37,7 +37,7 @@ namespace RHttpServer.Plugins.Default
                 var now = DateTime.UtcNow;
                 var olds =
                     _visitors.Where(
-                        t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
+                            t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
                         .Select(t => t.Key);
                 foreach (var ipAddress in olds)
                 {
@@ -55,7 +55,7 @@ namespace RHttpServer.Plugins.Default
                 var now = DateTime.UtcNow;
                 var olds =
                     _visitors.Where(
-                        t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
+                            t => now.Subtract(t.Value.SessionStarted).TotalSeconds > Settings.SessionLengthSeconds)
                         .Select(t => t.Key);
                 foreach (var ipAddress in olds)
                 {
@@ -68,7 +68,7 @@ namespace RHttpServer.Plugins.Default
         public bool HandleRequest(HttpListenerRequest req)
         {
             var url = req.RemoteEndPoint?.Address.MapToIPv4().ToString();
-            if (url != null && Settings != null)
+            if ((url != null) && (Settings != null))
             {
                 HttpRequester vis;
                 if (_blacklist.ContainsKey(url)) return false;
@@ -79,7 +79,7 @@ namespace RHttpServer.Plugins.Default
                     _blacklist.TryAdd(url, 1);
                     _visitors.TryRemove(url, out vis);
 
-                    Logging.Logger.Log("Security", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
+                    Logger.Log("Security", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
                     return true;
                 }
                 _visitors.TryAdd(url, new HttpRequester());
@@ -108,7 +108,7 @@ namespace RHttpServer.Plugins.Default
         public IHttpSecuritySettings Settings { get; set; }
 
         /// <summary>
-        /// Represents a http client in the DOS security implementation
+        ///     Represents a http client in the DOS security implementation
         /// </summary>
         internal class HttpRequester
         {
@@ -121,22 +121,22 @@ namespace RHttpServer.Plugins.Default
             private readonly object _lock = new object();
 
             /// <summary>
-            /// When the current request session was started
+            ///     When the current request session was started
             /// </summary>
             public DateTime SessionStarted { get; }
 
             /// <summary>
-            /// The number of requests since session start
+            ///     The number of requests since session start
             /// </summary>
             public int RequestsInSession { get; private set; }
 
             /// <summary>
-            /// When the latest request from client was received
+            ///     When the latest request from client was received
             /// </summary>
             public DateTime LatestVisit { get; private set; }
 
             /// <summary>
-            /// Called everytime a client requests something
+            ///     Called everytime a client requests something
             /// </summary>
             /// <returns></returns>
             public int JustRequested()

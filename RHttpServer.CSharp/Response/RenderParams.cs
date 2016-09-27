@@ -9,13 +9,10 @@ namespace RHttpServer.Response
     /// </summary>
     public sealed class RenderParams : IEnumerable<KeyValuePair<string, string>>
     {
-        internal RenderParams()
-        {
-        }
+        internal static IPageRenderer Renderer;
+
 
         private readonly IDictionary<string, string> _dict = new Dictionary<string, string>();
-
-        private IPageRenderer _renderer;
 
         /// <summary>
         ///     Attempts to retrieve the replacement data associated with the tag
@@ -40,7 +37,7 @@ namespace RHttpServer.Response
         /// <param name="parData">The replacement-data for the tag</param>
         public void Add(string parTag, string parData)
         {
-            _dict.Add(_renderer.Parametrize(parTag, parData));
+            _dict.Add(Renderer.Parametrize(parTag, parData));
         }
 
         /// <summary>
@@ -50,12 +47,7 @@ namespace RHttpServer.Response
         /// <param name="parData">The replacement-data object for the tag</param>
         public void Add(string parTag, object parData)
         {
-            _dict.Add(_renderer.ParametrizeObject(parTag, parData));
-        }
-
-        internal void SetRenderer(IPageRenderer renderer)
-        {
-            _renderer = renderer;
+            _dict.Add(Renderer.ParametrizeObject(parTag, parData));
         }
 
         /// <summary>

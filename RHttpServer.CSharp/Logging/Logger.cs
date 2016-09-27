@@ -33,7 +33,8 @@ namespace RHttpServer.Logging
                                   "\nLogging now turned off");
                 _logOpt = LoggingOption.None;
             }
-            else if((Directory.Exists(logFilePath) || File.Exists(logFilePath)) && File.GetAttributes(logFilePath).HasFlag(FileAttributes.Directory))
+            else if ((Directory.Exists(logFilePath) || File.Exists(logFilePath)) &&
+                     File.GetAttributes(logFilePath).HasFlag(FileAttributes.Directory))
             {
                 _logFilePath = Path.Combine(_logFilePath, "LOG.txt");
             }
@@ -51,14 +52,15 @@ namespace RHttpServer.Logging
                 case LoggingOption.None:
                     break;
                 case LoggingOption.Terminal:
-                    Console.WriteLine($"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}");
+                    Console.WriteLine(
+                        $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}");
                     break;
                 case LoggingOption.File:
                     lock (_fileLock)
                     {
                         File.AppendAllText(_logFilePath,
-                            $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}", Encoding.Default);
-
+                            $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}",
+                            Encoding.Default);
                     }
                     break;
             }

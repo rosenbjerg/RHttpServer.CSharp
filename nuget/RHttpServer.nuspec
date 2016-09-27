@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.3.2</version>
+    <version>1.0.3.3</version>
     <title>RHS - RHttpServer</title>
     <authors>Malte Rosenbjerg</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -10,7 +10,7 @@
     <projectUrl>https://github.com/rosenbjerg/RHttpServer.CSharp</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>
-RHttpServer is a simple server framework for creating powerful http(s) servers for websites with dynamic and static content or APIs, in a very simple manner
+RHttpServer is a simple server framework for creating powerful http(s) servers for websites with dynamic and static content, or APIs, in a very simple manner
 	</description>
 	<summary>
 RHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with express.
@@ -19,7 +19,7 @@ Furthermore a simple plugin for dynamic page rendering, which offers the ability
 The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
-    <releaseNotes>Fixes and added Xamarin support</releaseNotes>
+    <releaseNotes>Fixed multipart-formdata save to file</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>RHttpServer rhs http server api rendering ecs</tags>
   <dependencies>
@@ -29,15 +29,15 @@ See project page for more information.
 </dependencies>
   </metadata>
   <files>
-    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\net452" />
-    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\Xamarin.Mac20" />
-    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\Xamarin.iOS10" />
-    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\MonoAndroid10" />
-    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\MonoTouch10" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.dll" target="lib\net452" />
+    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\net452" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.dll" target="lib\Xamarin.Mac20" />
+    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\Xamarin.Mac20" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.dll" target="lib\Xamarin.iOS10" />
+    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\Xamarin.iOS10" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.dll" target="lib\MonoAndroid10" />
+    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\MonoAndroid10" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.dll" target="lib\MonoTouch10" />
+    <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\MonoTouch10" />
   </files>
 </package>

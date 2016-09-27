@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using RHttpServer.Logging;
 
 namespace RHttpServer.Request
 {
@@ -29,7 +30,7 @@ namespace RHttpServer.Request
                 }
                 catch (Exception ex)
                 {
-                    Logging.Logger.Log(ex);
+                    Logger.Log(ex);
                     return null;
                 }
             }

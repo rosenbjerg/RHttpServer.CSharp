@@ -5,8 +5,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Threading;
+using RHttpServer.Logging;
 using RHttpServer.Plugins;
 using RHttpServer.Plugins.Default;
 using RHttpServer.Request;
@@ -15,22 +15,14 @@ using RHttpServer.Response;
 namespace RHttpServer
 {
     /// <summary>
-    ///     Represents a HTTP server. 
+    ///     Represents a HTTP server.
     ///     It should be set up before start
     /// </summary>
     public class HttpServer : IDisposable
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
-        private readonly string[] _indexFiles = 
-        {
-            "index.html",
-            "index.htm",
-            "index.php",
-            "default.html",
-            "default.htm",
-            "default.php"
-        };
+
         /// <summary>
         ///     Constructs a server instance with given port and using the given path as public folder.
         ///     Set path to null or empty string if none wanted
@@ -44,7 +36,7 @@ namespace RHttpServer
             if (requestHandlerThreads < 1)
             {
                 requestHandlerThreads = 1;
-                Logging.Logger.Log("Thread setting", "Minimum 1 request-handler threads");
+                Logger.Log("Thread setting", "Minimum 1 request-handler threads");
             }
             ThrowExceptions = throwExceptions;
             PublicDir = path;
@@ -54,7 +46,7 @@ namespace RHttpServer
             _stop = new ManualResetEventSlim(false);
             _ready = new ManualResetEventSlim(false);
             _listener = new HttpListener();
-            _listenerThread = new Thread(HandleRequests) { Name = "ListenerThread" };
+            _listenerThread = new Thread(HandleRequests) {Name = "ListenerThread"};
         }
 
         /// <summary>
@@ -69,7 +61,7 @@ namespace RHttpServer
             if (requestHandlerThreads < 1)
             {
                 requestHandlerThreads = 1;
-                Logging.Logger.Log("Thread setting", "Minimum 1 request-handler threads");
+                Logger.Log("Thread setting", "Minimum 1 request-handler threads");
             }
             ThrowExceptions = throwExceptions;
             PublicDir = path;
@@ -83,8 +75,18 @@ namespace RHttpServer
             _stop = new ManualResetEventSlim(false);
             _ready = new ManualResetEventSlim(false);
             _listener = new HttpListener();
-            _listenerThread = new Thread(HandleRequests) { Name = "ListenerThread" };
+            _listenerThread = new Thread(HandleRequests) {Name = "ListenerThread"};
         }
+
+        private readonly string[] _indexFiles =
+        {
+            "index.html",
+            "index.htm",
+            "index.php",
+            "default.html",
+            "default.htm",
+            "default.php"
+        };
 
 
         private readonly HttpListener _listener;
@@ -94,9 +96,9 @@ namespace RHttpServer
         private readonly RouteTreeManager _rtman = new RouteTreeManager();
         private readonly ManualResetEventSlim _stop, _ready;
         private readonly Thread[] _workers;
+        private IFileCacheManager _cacheMan;
         private bool _defPluginsReady;
         private bool _securityOn;
-        private IFileCacheManager _cacheMan;
 
         /// <summary>
         ///     The publicly available folder
@@ -104,7 +106,7 @@ namespace RHttpServer
         public string PublicDir { get; }
 
         /// <summary>
-        /// Whether public files should be cached if size and extension is set to be cached
+        ///     Whether public files should be cached if size and extension is set to be cached
         /// </summary>
         public bool CachePublicFiles { get; set; }
 
@@ -124,20 +126,16 @@ namespace RHttpServer
                 if (_securityOn == value) return;
                 _securityOn = value;
                 if (_securityOn)
-                {
                     _rPluginCollection.Use<IHttpSecurityHandler>().Start();
-                }
                 else
-                {
                     _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
-                }
             }
         }
 
 
-
         /// <summary>
-        ///     Whether the server should respond to https requests <para/>
+        ///     Whether the server should respond to https requests
+        ///     <para />
         ///     You must have a (ssl) certificate installed to the specified port for it to respond.
         /// </summary>
         public bool HttpsEnabled { get; set; }
@@ -148,8 +146,10 @@ namespace RHttpServer
         public int HttpsPort { get; set; } = 5443;
 
         /// <summary>
-        ///     Register a plugin to be used in the server.<para />
-        ///     You can replace the default plugins by registering your plugin using the same interface as key before starting the server
+        ///     Register a plugin to be used in the server.
+        ///     <para />
+        ///     You can replace the default plugins by registering your plugin using the same interface as key before starting the
+        ///     server
         /// </summary>
         /// <typeparam name="TPluginInterface">The type the plugin implements</typeparam>
         /// <typeparam name="TPlugin">The type of the plugin instance</typeparam>
@@ -162,7 +162,8 @@ namespace RHttpServer
         }
 
         /// <summary>
-        ///     Add action to handle GET requests to a given route<para />
+        ///     Add action to handle GET requests to a given route
+        ///     <para />
         ///     Should always be idempotent.
         ///     (Receiving the same GET request one or multiple times should yield same result)
         /// </summary>
@@ -180,7 +181,8 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.POST);
 
         /// <summary>
-        ///     Add action to handle PUT requests to a given route.<para />
+        ///     Add action to handle PUT requests to a given route.
+        ///     <para />
         ///     Should always be idempotent.
         ///     (Receiving the same PUT request one or multiple times should yield same result)
         /// </summary>
@@ -190,7 +192,8 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.PUT);
 
         /// <summary>
-        ///     Add action to handle DELETE requests to a given route.<para />
+        ///     Add action to handle DELETE requests to a given route.
+        ///     <para />
         ///     Should always be idempotent.
         ///     (Receiving the same DELETE request one or multiple times should yield same result)
         /// </summary>
@@ -201,7 +204,8 @@ namespace RHttpServer
 
         /// <summary>
         ///     Add action to handle HEAD requests to a given route
-        ///     You should only send the headers of the route as response<para />
+        ///     You should only send the headers of the route as response
+        ///     <para />
         ///     Should always be idempotent.
         ///     (Receiving the same HEAD request one or multiple times should yield same result)
         /// </summary>
@@ -212,10 +216,14 @@ namespace RHttpServer
 
         /// <summary>
         ///     Add action to handle OPTIONS requests to a given route
-        ///     You should respond only using headers.<para />
+        ///     You should respond only using headers.
+        ///     <para />
         ///     Should always be idempotent.
-        ///     (Receiving the same HEAD request one or multiple times should yield same result)<para />
-        ///     And should contain one header with the id "Allow", and the content should contain the HTTP methods the route allows.<para />
+        ///     (Receiving the same HEAD request one or multiple times should yield same result)
+        ///     <para />
+        ///     And should contain one header with the id "Allow", and the content should contain the HTTP methods the route
+        ///     allows.
+        ///     <para />
         ///     (f.x. "Allow": "GET, POST, OPTIONS")
         /// </summary>
         /// <param name="route">The route to respond to</param>
@@ -224,7 +232,8 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.OPTIONS);
 
         /// <summary>
-        ///     Starts the server, and all request handling threads<para />
+        ///     Starts the server, and all request handling threads
+        ///     <para />
         /// </summary>
         /// <param name="localOnly">Whether to only listn locally</param>
         public void Start(bool localOnly = false)
@@ -239,11 +248,12 @@ namespace RHttpServer
 
                 for (var i = 0; i < _workers.Length; i++)
                 {
-                    _workers[i] = new Thread(Worker) { Name = $"RequestHandler #{i}"};
+                    _workers[i] = new Thread(Worker) {Name = $"RequestHandler #{i}"};
                     _workers[i].Start();
                 }
                 Console.WriteLine("RHttpServer v. {0} started", Version);
-                if (localOnly) Logging.Logger.Log("Server visibility", "Listening on localhost only");
+                if (localOnly) Logger.Log("Server visibility", "Listening on localhost only");
+                RenderParams.Renderer = _rPluginCollection.Use<IPageRenderer>();
             }
             catch (SocketException)
             {
@@ -259,8 +269,10 @@ namespace RHttpServer
         }
 
         /// <summary>
-        ///     Initializes any default plugin if no other plugin is registered to same interface <para />
-        ///     Also used for changing the default security settings <para />
+        ///     Initializes any default plugin if no other plugin is registered to same interface
+        ///     <para />
+        ///     Also used for changing the default security settings
+        ///     <para />
         ///     Should be called after you have registered all your non-default plugins
         /// </summary>
         public void InitializeDefaultPlugins(bool renderCaching = true, bool securityOn = false,
@@ -308,17 +320,6 @@ namespace RHttpServer
             _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
         }
 
-        /// <summary>
-        ///     Method to get a new RenderParams object
-        /// </summary>
-        /// <returns>A new RenderParams instance with access</returns>
-        public RenderParams CreateRenderParams()
-        {
-            var renderParams = new RenderParams();
-            renderParams.SetRenderer(_rPluginCollection.Use<IPageRenderer>());
-            return renderParams;
-        }
-
         private void HandleRequests()
         {
             try
@@ -327,13 +328,13 @@ namespace RHttpServer
                 {
                     var context = _listener.BeginGetContext(ContextReady, null);
 
-                    if (0 == WaitHandle.WaitAny(new[] { _stop.WaitHandle, context.AsyncWaitHandle }))
+                    if (0 == WaitHandle.WaitAny(new[] {_stop.WaitHandle, context.AsyncWaitHandle}))
                         return;
                 }
             }
             catch (Exception ex)
             {
-                Logging.Logger.Log(ex);
+                Logger.Log(ex);
                 if (ThrowExceptions) throw;
             }
         }
@@ -347,7 +348,7 @@ namespace RHttpServer
             }
             catch (Exception ex)
             {
-                Logging.Logger.Log(ex);
+                Logger.Log(ex);
                 if (ThrowExceptions) throw;
             }
         }
@@ -370,7 +371,7 @@ namespace RHttpServer
                 }
                 catch (Exception ex)
                 {
-                    Logging.Logger.Log(ex);
+                    Logger.Log(ex);
                     if (ThrowExceptions) throw;
                 }
             }
@@ -403,16 +404,16 @@ namespace RHttpServer
                     hm = HttpMethod.HEAD;
                     break;
                 default:
-                    Logging.Logger.Log("Invalid HTTP method", $"{method} from {context.Request.LocalEndPoint}");
+                    Logger.Log("Invalid HTTP method", $"{method} from {context.Request.LocalEndPoint}");
                     context.Response.StatusCode = (int) HttpStatusCode.NotFound;
                     context.Response.Close();
                     return;
             }
 
             bool generalFallback;
-           
+
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
-            if ((generalFallback || act == null) && !string.IsNullOrWhiteSpace(PublicDir))
+            if ((generalFallback || (act == null)) && !string.IsNullOrWhiteSpace(PublicDir))
             {
                 var p = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries).ToList();
                 p.Insert(0, PublicDir);
@@ -430,7 +431,8 @@ namespace RHttpServer
                     if (!RResponse.MimeTypes.TryGetValue(Path.GetExtension(publicFile).ToLowerInvariant(), out type))
                         type = "application/octet-stream";
                     new RResponse(context.Response, _rPluginCollection).SendBytes(temp, type);
-                    if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
+                    if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile))
+                        _cacheMan.TryAdd(publicFile, temp);
                     return;
                 }
                 var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
@@ -449,7 +451,8 @@ namespace RHttpServer
                 {
                     temp = File.ReadAllBytes(publicFile);
                     new RResponse(context.Response, _rPluginCollection).SendBytes(temp, "text/html");
-                    if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile)) _cacheMan.TryAdd(publicFile, temp);
+                    if (CachePublicFiles && _cacheMan.CanAdd(temp.Length, publicFile))
+                        _cacheMan.TryAdd(publicFile, temp);
                     return;
                 }
             }

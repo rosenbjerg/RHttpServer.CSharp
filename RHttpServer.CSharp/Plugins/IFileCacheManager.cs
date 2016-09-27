@@ -8,13 +8,20 @@ namespace RHttpServer.Plugins
     public interface IFileCacheManager
     {
         /// <summary>
+        ///     File types that are allowed to be cached.
+        ///     The default cache manager can only cache text files, not binary.
+        ///     All extension must be lowercase
+        /// </summary>
+        HashSet<string> CacheAllowedFileExtension { get; }
+
+        /// <summary>
         ///     Method to call when it is needed to empty the page cache.
         ///     Useful if the page files on the harddrive is being modified on runtime.
         /// </summary>
         void EmptyCache();
 
         /// <summary>
-        /// Checks whether a file can be cached using current settings
+        ///     Checks whether a file can be cached using current settings
         /// </summary>
         /// <param name="filesizeBytes">The lenght of the file</param>
         /// <param name="filename">The filename with extention, can contain path</param>
@@ -22,14 +29,7 @@ namespace RHttpServer.Plugins
         bool CanAdd(long filesizeBytes, string filename);
 
         /// <summary>
-        /// File types that are allowed to be cached.
-        /// The default cache manager can only cache text files, not binary.
-        /// All extension must be lowercase
-        /// </summary>
-        HashSet<string> CacheAllowedFileExtension { get; }
-
-        /// <summary>
-        /// Returns to file content to out parameter if found
+        ///     Returns to file content to out parameter if found
         /// </summary>
         /// <param name="filepath">The path of the file and key to retrieving it</param>
         /// <param name="content">The content of the file</param>
@@ -37,7 +37,7 @@ namespace RHttpServer.Plugins
         bool TryGetFile(string filepath, out byte[] content);
 
         /// <summary>
-        /// Attempts to add the file, as it may have been added by another thread.
+        ///     Attempts to add the file, as it may have been added by another thread.
         /// </summary>
         /// <param name="filepath">The path the file should be located at</param>
         /// <param name="content">The content of the file</param>
@@ -45,7 +45,7 @@ namespace RHttpServer.Plugins
         bool TryAdd(string filepath, byte[] content);
 
         /// <summary>
-        /// Set the max sizes for individual files and 
+        ///     Set the max sizes for individual files and
         /// </summary>
         /// <param name="maxFileSizeBytes">Default cache manager uses 0x4000 bytes as default (16 kb)</param>
         /// <param name="maxCacheSizeBytes">Default cache manager uses 0x3200000 bytes as default(50 mb)</param>
