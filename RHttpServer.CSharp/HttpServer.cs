@@ -134,6 +134,13 @@ namespace RHttpServer
 
 
         /// <summary>
+        ///     Whether the server should respond to http requests
+        ///     <para />
+        ///     Defaults to true
+        /// </summary>
+        public bool HttpEnabled { get; set; } = true;
+
+        /// <summary>
         ///     Whether the server should respond to https requests
         ///     <para />
         ///     You must have a (ssl) certificate installed to the specified port for it to respond.
@@ -238,21 +245,42 @@ namespace RHttpServer
         /// <param name="localOnly">Whether to only listn locally</param>
         public void Start(bool localOnly = false)
         {
+            Start(localOnly ? "localhost" : "+");
+        }
+
+        /// <summary>
+        ///     Starts the server, and all request handling threads <para />
+        ///     Only answers to requests with specified prefixes <para />
+        ///     Specify in following format: <para />
+        ///     "+" , "*" , "localhost" , "example.com", "123.12.34.56"<para />
+        ///     Protocol and port will be added automatically
+        /// </summary>
+        /// <param name="listeningPrefixes">The prefixes the server will listen for requests with</param>
+        public void Start(params string[] listeningPrefixes) 
+        {
             try
             {
                 InitializeDefaultPlugins();
-                _listener.Prefixes.Add($"http://{(localOnly ? "localhost" : "+")}:{Port}/");
-                if (HttpsEnabled) _listener.Prefixes.Add($"https://{(localOnly ? "localhost" : "+")}:{HttpsPort}/");
+                foreach (var listeningPrefix in listeningPrefixes)
+                {
+                    if (HttpEnabled) _listener.Prefixes.Add($"http://{listeningPrefix}:{Port}/");
+                    if (HttpsEnabled) _listener.Prefixes.Add($"https://{listeningPrefix}:{HttpsPort}/");
+                }
+                if (_listener.Prefixes.Count == 0)
+                {
+                    Console.WriteLine("You must listen for either http or https (or both) requests for the server to do anything");
+                    return;
+                }
                 _listener.Start();
                 _listenerThread.Start();
 
                 for (var i = 0; i < _workers.Length; i++)
                 {
-                    _workers[i] = new Thread(Worker) {Name = $"RequestHandler #{i}"};
+                    _workers[i] = new Thread(Worker) { Name = $"RequestHandler #{i}" };
                     _workers[i].Start();
                 }
                 Console.WriteLine("RHttpServer v. {0} started", Version);
-                if (localOnly) Logger.Log("Server visibility", "Listening on localhost only");
+                if (_listener.Prefixes.First() == "localhost") Logger.Log("Server visibility", "Listening on localhost only");
                 RenderParams.Renderer = _rPluginCollection.Use<IPageRenderer>();
             }
             catch (SocketException)
@@ -262,8 +290,8 @@ namespace RHttpServer
             }
             catch (HttpListenerException)
             {
-                Console.WriteLine("Could not obtain permission to listen for + (everything) on selected port\n" +
-                                  "Please aquire the permission or start the server as local-only");
+                Console.WriteLine("Could not obtain permission to listen for '{0}' on selected port\n" +
+                                  "Please aquire the permission or start the server as local-only", string.Join(", ", listeningPrefixes));
                 Environment.Exit(0);
             }
         }

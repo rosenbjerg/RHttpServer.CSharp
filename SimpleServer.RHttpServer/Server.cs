@@ -12,12 +12,9 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(5000, 3, "./public", true) {CachePublicFiles = false};
-
-            //server.Get("/", (req, res) => { res.SendString("ok"); });
-
-            //server.Get("/file", (req, res) => { res.SendFile("./public/index.html"); });
-
+            var server = new HttpServer(5000, 3, "./public");
+            server.Get("/", (req, res) => { res.SendString("ok"); });
+            
             server.Get("/render", (req, res) =>
             {
                 var pars = new RenderParams
@@ -46,11 +43,7 @@ namespace SimpleRHttpServer
 
             server.Post("/postdata", (req, res) =>
             {
-                var v = new {S = "", Daw = 39};
                 req.SaveBodyToFile("./public/down", s => "temptemp" + s);
-                //var reas = req.GetBodyPostFormData();
-                //var fname = reas["fname"];
-                //var lname = reas["lname"];
                 res.SendString($"Hi");
             });
 
@@ -73,9 +66,13 @@ namespace SimpleRHttpServer
             //Logger.Configure(LoggingOption.File, true, "./log.txt");
 
             //server.InitializeDefaultPlugins(renderCaching: true, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
-            server.HttpsEnabled = true;
+
 
             server.Start(true);
+
+            //var server2 = new HttpServer(5000, 2, "");
+            //server2.Get("/", (req, res) => { res.SendString("ok2"); });
+            //server2.Start("localhost");
         }
     }
 }
