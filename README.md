@@ -58,7 +58,7 @@ server.Post("/upload", (req, res) =>
 });
 
 // The asterisk (*) is a weak wildcard
-// here it is used as a fallback when visitors requests an not handled route 
+// here it is used as a fallback when visitors requests an unknown route
 server.Get("/*", (req, res) =>
 {
     res.Redirect("/404");
@@ -71,6 +71,10 @@ server.Get("/404", (req, res) =>
 
 server.Start(true);
 ```
+### Static files
+When serving static files, it not required to add a route action for every static file.
+If no route action is provided for the requested route, a lookup will be performed, determining whether the route matches a file in the public file directory specified when creating an instance of the HttpServer class.
+This lookup can be performed much faster by enabling public file caching.
 
 ## Plug-ins
 RHttpServer is created to be easy to build on top of. 
