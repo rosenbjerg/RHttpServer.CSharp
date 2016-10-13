@@ -32,14 +32,16 @@ server.Get("/", (req, res) =>
     res.SendString("Welcome");
 });
 
+// Sends the file index.html as response
 server.Get("/file", (req, res) =>
 {
     res.SendFile("./public/index.html");
 });
 
+
 server.Get("/:name", (req, res) =>
 {
-    var pars = server.CreateRenderParams();
+    var pars = new RenderParams();
     pars.Add("data1", req.Params["name"]);
     pars.Add("foo", "bar");
     pars.Add("answer", 42);
@@ -47,6 +49,16 @@ server.Get("/:name", (req, res) =>
     res.RenderPage("./public/index.ecs", pars);
 });
 
+// Saves the body of post requests to the Uploads folder
+// and prepends the current date and time to the filename
+server.Post("/upload", (req, res) =>
+{
+    req.SaveBodyToFile("./Uploads", fname => DateTime.Now + "-" + fname);
+    res.SendString("saved");
+});
+
+// The asterisk (*) is a weak wildcard
+// here it is used as a fallback when visitors requests an not handled route 
 server.Get("/*", (req, res) =>
 {
     res.Redirect("/404");
@@ -57,7 +69,6 @@ server.Get("/404", (req, res) =>
     res.SendString("Nothing found", HttpStatusCode.NotFound);
 });
 
-server.InitializeDefaultPlugins();
 server.Start(true);
 ```
 
