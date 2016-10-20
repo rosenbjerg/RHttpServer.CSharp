@@ -5,7 +5,7 @@ A C# alternative to nodejs and similar server bundles
 Some of the use patterns has been inspired by nodejs and expressjs
 
 ### Documentation
-Documentation can be found [here](http://rosenbjerg.dk/rhs/docs)
+Documentation can be found [here](http://rosenbjerg.dk/rhs/docs/)
 
 ### RHttpServerBuilder (rhsb)
 I have created a simple tool that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
