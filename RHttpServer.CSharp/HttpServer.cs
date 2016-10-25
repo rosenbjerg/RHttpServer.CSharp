@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using RHttpServer.Logging;
 using RHttpServer.Plugins;
@@ -40,6 +41,7 @@ namespace RHttpServer
             }
             ThrowExceptions = throwExceptions;
             PublicDir = path;
+            _publicFiles = Directory.Exists(path);
             Port = port;
             _workers = new Thread[requestHandlerThreads];
             _queue = new ConcurrentQueue<HttpListenerContext>();
@@ -65,6 +67,7 @@ namespace RHttpServer
             }
             ThrowExceptions = throwExceptions;
             PublicDir = path;
+            _publicFiles = Directory.Exists(path);
             //get an empty port
             var l = new TcpListener(IPAddress.Loopback, 0);
             l.Start();
@@ -99,6 +102,7 @@ namespace RHttpServer
         private IFileCacheManager _cacheMan;
         private bool _defPluginsReady;
         private bool _securityOn;
+        private bool _publicFiles;
 
         /// <summary>
         ///     The publicly available folder
@@ -126,9 +130,9 @@ namespace RHttpServer
                 if (_securityOn == value) return;
                 _securityOn = value;
                 if (_securityOn)
-                    _rPluginCollection.Use<IHttpSecurityHandler>().Start();
+                    _rPluginCollection.Use<IHttpSecurityHandler>()?.Start();
                 else
-                    _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
+                    _rPluginCollection.Use<IHttpSecurityHandler>()?.Stop();
             }
         }
 
@@ -143,7 +147,7 @@ namespace RHttpServer
         /// <summary>
         ///     Whether the server should respond to https requests
         ///     <para />
-        ///     You must have a (ssl) certificate installed to the specified port for it to respond.
+        ///     You must have a (ssl) certificate setup to the specified port for it to respond.
         /// </summary>
         public bool HttpsEnabled { get; set; }
 
@@ -228,7 +232,7 @@ namespace RHttpServer
         ///     Should always be idempotent.
         ///     (Receiving the same HEAD request one or multiple times should yield same result)
         ///     <para />
-        ///     And should contain one header with the id "Allow", and the content should contain the HTTP methods the route
+        ///     Should contain one header with the id "Allow", and the content should contain the HTTP methods the route
         ///     allows.
         ///     <para />
         ///     (f.x. "Allow": "GET, POST, OPTIONS")
@@ -362,8 +366,8 @@ namespace RHttpServer
             }
             catch (Exception ex)
             {
-                Logger.Log(ex);
                 if (ThrowExceptions) throw;
+                Logger.Log(ex);
             }
         }
 
@@ -376,32 +380,32 @@ namespace RHttpServer
             }
             catch (Exception ex)
             {
-                Logger.Log(ex);
                 if (ThrowExceptions) throw;
+                Logger.Log(ex);
             }
         }
 
         private void Worker()
         {
-            WaitHandle[] wait = {_ready.WaitHandle, _stop.WaitHandle};
-            while (0 == WaitHandle.WaitAny(wait))
+            try
             {
-                HttpListenerContext context;
-                if (!_queue.TryDequeue(out context))
+                WaitHandle[] wait = { _ready.WaitHandle, _stop.WaitHandle };
+                while (0 == WaitHandle.WaitAny(wait))
                 {
-                    _ready.Reset();
-                    continue;
-                }
-                try
-                {
+                    HttpListenerContext context;
+                    if (!_queue.TryDequeue(out context))
+                    {
+                        _ready.Reset();
+                        continue;
+                    }
                     if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request))
                         Process(context);
                 }
-                catch (Exception ex)
-                {
-                    Logger.Log(ex);
-                    if (ThrowExceptions) throw;
-                }
+            }
+            catch (Exception ex)
+            {
+                if (ThrowExceptions) throw;
+                Logger.Log(ex);
             }
         }
 
@@ -432,7 +436,7 @@ namespace RHttpServer
                     hm = HttpMethod.HEAD;
                     break;
                 default:
-                    Logger.Log("Invalid HTTP method", $"{method} from {context.Request.LocalEndPoint}");
+                    Logger.Log("Invalid HTTP method", $"{method} from {context.Request.RemoteEndPoint}");
                     context.Response.StatusCode = (int) HttpStatusCode.NotFound;
                     context.Response.Close();
                     return;
@@ -514,7 +518,7 @@ namespace RHttpServer
                 .ToDictionary(kvp => kvp.Value, kvp => rTree[kvp.Key]);
             return new RequestParams(dict);
         }
-
+        
         public void Dispose()
         {
             Stop();

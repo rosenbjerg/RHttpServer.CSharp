@@ -90,8 +90,13 @@ namespace RHttpServer
                 generalFallback = true;
                 return tree?.General?.Action;
             }
-            generalFallback = tree?.Route == "*";
-            return tree?.Action;
+            if (tree.Action == null && tree.General != null)
+            {
+                generalFallback = true;
+                return tree.General.Action;
+            }
+            generalFallback = tree.Route == "*";
+            return tree.Action;
         }
     }
 }

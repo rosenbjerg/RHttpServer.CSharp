@@ -18,7 +18,6 @@ namespace RHttpServer.Request
         {
             UnderlyingRequest = req;
             Params = par;
-
             _bodyParser = pluginCollection.Use<IBodyParser>();
         }
 
@@ -55,6 +54,8 @@ namespace RHttpServer.Request
         ///     The implementation of RRequest is leaky, to avoid limiting you
         /// </summary>
         public HttpListenerRequest UnderlyingRequest { get; }
+        
+
 
         /// <summary>
         ///     Returns the body stream of the request

@@ -61,35 +61,38 @@ namespace RHttpServer.Plugins.Default
                             return default(T);
                         }
                     }
-                    if (t == _string)
-                        return (T) (object) reader.ReadToEnd();
-                    switch (underlyingRequest.ContentType)
+                    if (t == _string) return (T) (object) reader.ReadToEnd();
+                    string txt;
+                    if (underlyingRequest.ContentType.Contains("application/xml") ||
+                        underlyingRequest.ContentType.Contains("text/xml"))
                     {
-                        case "application/xml":
-                        case "text/xml":
-                            try
-                            {
-                                return UsePlugin<IXmlConverter>().Deserialize<T>(await reader.ReadToEndAsync());
-                            }
-                            catch (FormatException ex)
-                            {
-                                Logger.Log(ex);
-                                return default(T);
-                            }
-                        case "application/json":
-                        case "text/json":
-                            try
-                            {
-                                return UsePlugin<IJsonConverter>().Deserialize<T>(await reader.ReadToEndAsync());
-                            }
-                            catch (FormatException ex)
-                            {
-                                Logger.Log(ex);
-                                return default(T);
-                            }
-                        default:
+                        txt = reader.ReadToEnd();
+                        try
+                        {
+                            return UsePlugin<IXmlConverter>().Deserialize<T>(txt);
+                        }
+                        catch (FormatException ex)
+                        {
+                            Logger.Log(ex);
                             return default(T);
+                        }
                     }
+
+                    if (underlyingRequest.ContentType.Contains("application/json") ||
+                        underlyingRequest.ContentType.Contains("text/json"))
+                    {
+                        txt = reader.ReadToEnd();
+                        try
+                        {
+                            return UsePlugin<IJsonConverter>().Deserialize<T>(txt);
+                        }
+                        catch (FormatException ex)
+                        {
+                            Logger.Log(ex);
+                            return default(T);
+                        }
+                    }
+                    return default(T);
                 }
             }
         }
@@ -103,7 +106,6 @@ namespace RHttpServer.Plugins.Default
             {
                 using (var reader = new StreamReader(stream, underlyingRequest.ContentEncoding))
                 {
-                    string txt;
                     if (t.IsPrimitive)
                     {
                         if (t == _int)
@@ -139,35 +141,38 @@ namespace RHttpServer.Plugins.Default
                     }
                     if (t == _string)
                         return (T) (object) reader.ReadToEnd();
-                    switch (underlyingRequest.ContentType)
+
+                    string txt;
+                    if (underlyingRequest.ContentType.Contains("application/xml") ||
+                        underlyingRequest.ContentType.Contains("text/xml"))
                     {
-                        case "application/xml":
-                        case "text/xml":
-                            txt = reader.ReadToEnd();
-                            try
-                            {
-                                return UsePlugin<IXmlConverter>().Deserialize<T>(txt);
-                            }
-                            catch (FormatException ex)
-                            {
-                                Logger.Log(ex);
-                                return default(T);
-                            }
-                        case "application/json":
-                        case "text/json":
-                            txt = reader.ReadToEnd();
-                            try
-                            {
-                                return UsePlugin<IJsonConverter>().Deserialize<T>(txt);
-                            }
-                            catch (FormatException ex)
-                            {
-                                Logger.Log(ex);
-                                return default(T);
-                            }
-                        default:
+                        txt = reader.ReadToEnd();
+                        try
+                        {
+                            return UsePlugin<IXmlConverter>().Deserialize<T>(txt);
+                        }
+                        catch (FormatException ex)
+                        {
+                            Logger.Log(ex);
                             return default(T);
+                        }
                     }
+
+                    if (underlyingRequest.ContentType.Contains("application/json") ||
+                        underlyingRequest.ContentType.Contains("text/json"))
+                    {
+                        txt = reader.ReadToEnd();
+                        try
+                        {
+                            return UsePlugin<IJsonConverter>().Deserialize<T>(txt);
+                        }
+                        catch (FormatException ex)
+                        {
+                            Logger.Log(ex);
+                            return default(T);
+                        }
+                    }
+                    return default(T);
                 }
             }
         }

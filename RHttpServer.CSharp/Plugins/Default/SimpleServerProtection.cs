@@ -68,22 +68,20 @@ namespace RHttpServer.Plugins.Default
         public bool HandleRequest(HttpListenerRequest req)
         {
             var url = req.RemoteEndPoint?.Address.MapToIPv4().ToString();
-            if ((url != null) && (Settings != null))
+            if (url == null || Settings == null) return true;
+            HttpRequester vis;
+            if (_blacklist.ContainsKey(url)) return false;
+
+            if (_visitors.TryGetValue(url, out vis))
             {
-                HttpRequester vis;
-                if (_blacklist.ContainsKey(url)) return false;
+                if (vis.JustRequested() <= Settings.MaxRequestsPerSession) return true;
+                _blacklist.TryAdd(url, 1);
+                _visitors.TryRemove(url, out vis);
 
-                if (_visitors.TryGetValue(url, out vis))
-                {
-                    if (vis.JustRequested() <= Settings.MaxRequestsPerSession) return true;
-                    _blacklist.TryAdd(url, 1);
-                    _visitors.TryRemove(url, out vis);
-
-                    Logger.Log("Security", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
-                    return true;
-                }
-                _visitors.TryAdd(url, new HttpRequester());
+                Logger.Log("Security", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
+                return true;
             }
+            _visitors.TryAdd(url, new HttpRequester());
             return true;
         }
 

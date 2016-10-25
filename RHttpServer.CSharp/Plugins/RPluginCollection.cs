@@ -33,7 +33,7 @@ namespace RHttpServer.Plugins
             object obj;
             if (_plugins.TryGetValue(typeof(TPluginInterface), out obj)) return (TPluginInterface) obj;
             throw new RHttpServerException(
-                $"You must have registered a plugin the implements '{typeof(TPluginInterface).Name}'");
+                $"You must have registered a plugin that implements '{typeof(TPluginInterface).Name}'");
         }
     }
 }

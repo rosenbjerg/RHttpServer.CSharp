@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.3.4</version>
+    <version>1.0.3.6</version>
     <title>RHS - RHttpServer</title>
     <authors>Malte Rosenbjerg</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -19,7 +19,7 @@ Furthermore a simple plugin for dynamic page rendering, which offers the ability
 The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
-    <releaseNotes>Customize listening prefix</releaseNotes>
+    <releaseNotes>Minor fixes</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>RHttpServer rhs http server api rendering ecs</tags>
   <dependencies>

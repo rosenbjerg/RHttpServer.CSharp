@@ -118,6 +118,7 @@ namespace RHttpServer.Response
         /// <param name="fieldValue"></param>
         public void AddHeader(string fieldName, string fieldValue)
         {
+            if (Closed) throw new RHttpServerException("You cannot add a header after closing the request");
             UnderlyingResponse.AddHeader(fieldName, fieldValue);
         }
 
@@ -147,21 +148,25 @@ namespace RHttpServer.Response
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(data);
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 await UnderlyingResponse.OutputStream.WriteAsync(bytes, 0, bytes.Length);
                 await UnderlyingResponse.OutputStream.FlushAsync();
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+                UnderlyingResponse.OutputStream.Close();
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }
@@ -180,21 +185,25 @@ namespace RHttpServer.Response
             try
             {
                 UnderlyingResponse.StatusCode = status;
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = data.Length;
                 await UnderlyingResponse.OutputStream.WriteAsync(data, 0, data.Length);
                 await UnderlyingResponse.OutputStream.FlushAsync();
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+                UnderlyingResponse.OutputStream.Close();
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }
@@ -212,21 +221,25 @@ namespace RHttpServer.Response
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.ContentType = "application/json";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 await UnderlyingResponse.OutputStream.WriteAsync(bytes, 0, bytes.Length);
                 await UnderlyingResponse.OutputStream.FlushAsync();
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+                UnderlyingResponse.OutputStream.Close();
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }
@@ -244,21 +257,25 @@ namespace RHttpServer.Response
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IXmlConverter>().Serialize(data));
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.ContentType = "application/xml";
                 UnderlyingResponse.ContentLength64 = bytes.Length;
                 await UnderlyingResponse.OutputStream.WriteAsync(bytes, 0, bytes.Length);
                 await UnderlyingResponse.OutputStream.FlushAsync();
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
+                UnderlyingResponse.OutputStream.Close();
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }
@@ -281,8 +298,6 @@ namespace RHttpServer.Response
                         ? mime
                         : "application/octet-stream";
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
-                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
-                UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
                 UnderlyingResponse.AddHeader("Content-disposition", "inline; filename=" + Path.GetFileName(filepath));
                 using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
@@ -296,17 +311,21 @@ namespace RHttpServer.Response
                     while ((nbytes = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         await stream.WriteAsync(buffer, 0, nbytes);
                     await UnderlyingResponse.OutputStream.FlushAsync();
+                    UnderlyingResponse.OutputStream.Close();
                 }
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }
@@ -331,8 +350,6 @@ namespace RHttpServer.Response
                         ? mime
                         : "application/octet-stream";
                 UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
-                UnderlyingResponse.AddHeader("Date", DateTime.Now.ToString("r"));
-                UnderlyingResponse.AddHeader("Last-Modified", File.GetLastWriteTime(filepath).ToString("r"));
                 UnderlyingResponse.AddHeader("Content-disposition",
                     "attachment; filename=" +
                     (string.IsNullOrWhiteSpace(filename) ? Path.GetFileName(filepath) : filename));
@@ -347,17 +364,21 @@ namespace RHttpServer.Response
                     while ((nbytes = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         await stream.WriteAsync(buffer, 0, nbytes);
                     await UnderlyingResponse.OutputStream.FlushAsync();
+                    UnderlyingResponse.OutputStream.Close();
                 }
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }
@@ -377,20 +398,23 @@ namespace RHttpServer.Response
                 UnderlyingResponse.StatusCode = status;
                 var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
                 UnderlyingResponse.ContentType = "text/html";
+                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
                 UnderlyingResponse.ContentLength64 = data.Length;
                 await UnderlyingResponse.OutputStream.WriteAsync(data, 0, data.Length);
                 await UnderlyingResponse.OutputStream.FlushAsync();
-                UnderlyingResponse.AddHeader("Server", $"RHttpServer.CSharp/{HttpServer.Version}");
             }
             catch (Exception ex)
             {
-                UnderlyingResponse.StatusCode = (int) HttpStatusCode.InternalServerError;
-                Logger.Log(ex);
+                try
+                {
+                    UnderlyingResponse.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+                catch (InvalidOperationException) { }
                 if (HttpServer.ThrowExceptions) throw;
+                Logger.Log(ex);
             }
             finally
             {
-                UnderlyingResponse.OutputStream.Close();
                 UnderlyingResponse.Close();
                 Closed = true;
             }

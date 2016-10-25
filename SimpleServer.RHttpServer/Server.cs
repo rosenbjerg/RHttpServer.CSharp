@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 using RHttpServer;
 using RHttpServer.Logging;
 using RHttpServer.Plugins;
@@ -12,9 +16,12 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(5000, 3, "./public");
+            var server = new HttpServer(5000, 3, "");
             server.Get("/", (req, res) => { res.SendString("ok"); });
-            
+            server.Get("/*", (req, res) => { res.SendString("no"); });
+            server.Get("/daw", (req, res) => { res.SendString("ok1"); });
+            server.Get("/daw/*", (req, res) => { res.SendString("no1"); });
+
             server.Get("/render", (req, res) =>
             {
                 var pars = new RenderParams
@@ -41,11 +48,15 @@ namespace SimpleRHttpServer
             //    res.RenderPage("./public/index.ecs", pars);
             //});
 
-            server.Post("/postdata", (req, res) =>
-            {
-                req.SaveBodyToFile("./public/down", s => "temptemp" + s);
-                res.SendString($"Hi");
-            });
+            //server.Post("/postdata", (req, res) =>
+            //{
+            //    var data = req.ParseBody<Test>();
+            //    if (data.Est == "hej")
+            //    {
+
+            //    }
+            //    res.SendString(data.Est);
+            //});
 
             //server.Get("/:par1/:par2", (req, res) =>
             //{
@@ -63,13 +74,10 @@ namespace SimpleRHttpServer
 
             //server.Get("/*", (req, res) => { res.Redirect("/404"); });
 
-            //Logger.Configure(LoggingOption.File, true, "./log.txt");
-
+            Logger.Configure(LoggingOption.File, true, "./log.txt");
             //server.InitializeDefaultPlugins(renderCaching: true, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
 
-
             server.Start(true);
-
             //var server2 = new HttpServer(5000, 2, "");
             //server2.Get("/", (req, res) => { res.SendString("ok2"); });
             //server2.Start("localhost");
