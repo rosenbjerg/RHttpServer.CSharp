@@ -108,3 +108,8 @@ Embed your dynamic content using RenderParams instead of embedding the code for 
 
 ## Why?
 Because i like C#, the .NET framework and type-safety, but i also like the use-patterns of nodejs, with expressjs especially.
+
+## License
+RHttpServer is released under MIT license, so it is free to use, even in commercial 
+
+Buy me a beer: 36D35XqGpMA5uPxmoTPhCyDDCAGJNTE7AJ
