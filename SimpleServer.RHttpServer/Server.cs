@@ -16,9 +16,7 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(5000, 3, "");
-            server.Get("/", (req, res) => { res.SendString("ok"); });
-            server.Get("/*", (req, res) => { res.SendString("no"); });
+            var server = new HttpServer(5000, 3, "public");
             server.Get("/daw", (req, res) => { res.SendString("ok1"); });
             server.Get("/daw/*", (req, res) => { res.SendString("no1"); });
 
@@ -48,15 +46,11 @@ namespace SimpleRHttpServer
             //    res.RenderPage("./public/index.ecs", pars);
             //});
 
-            //server.Post("/postdata", (req, res) =>
-            //{
-            //    var data = req.ParseBody<Test>();
-            //    if (data.Est == "hej")
-            //    {
-
-            //    }
-            //    res.SendString(data.Est);
-            //});
+            server.Post("/newuserpost", (req, res) =>
+            {
+                var data = req.GetBodyPostFormData();
+                res.SendString("ok");
+            });
 
             //server.Get("/:par1/:par2", (req, res) =>
             //{

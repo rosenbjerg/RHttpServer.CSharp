@@ -94,7 +94,7 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public Dictionary<string, string> GetBodyPostFormData()
         {
-            if (UnderlyingRequest.ContentType != "x-www-form-urlencoded")
+            if (!UnderlyingRequest.ContentType.Contains("x-www-form-urlencoded"))
                 return new Dictionary<string, string>();
             using (var reader = new StreamReader(UnderlyingRequest.InputStream))
             {
