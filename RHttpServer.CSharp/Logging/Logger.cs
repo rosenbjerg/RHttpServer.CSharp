@@ -89,5 +89,28 @@ namespace RHttpServer.Logging
                     break;
             }
         }
+
+        /// <summary>
+        ///     Log an item message using the current LoggingOption.
+        /// </summary>
+        /// <param name="message"></param>
+        public static void Log(string message)
+        {
+            switch (_logOpt)
+            {
+                case LoggingOption.None:
+                    break;
+                case LoggingOption.Terminal:
+                    Console.WriteLine($"{DateTime.Now.ToString("g")}: {message}");
+                    break;
+                case LoggingOption.File:
+                    lock (_fileLock)
+                    {
+                        File.AppendAllText(_logFilePath, $"{DateTime.Now.ToString("g")}: {message}\n",
+                            Encoding.Default);
+                    }
+                    break;
+            }
+        }
     }
 }
