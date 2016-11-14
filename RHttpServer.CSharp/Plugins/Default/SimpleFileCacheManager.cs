@@ -1,17 +1,27 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace RHttpServer.Plugins.Default
 {
     internal class SimpleFileCacheManager : RPlugin, IFileCacheManager
     {
-        private readonly ConcurrentDictionary<string, byte[]> _cachedPages = new ConcurrentDictionary<string, byte[]>();
+        private readonly ConcurrentDictionary<string, MemoryStream> _cachedPages = new ConcurrentDictionary<string, MemoryStream>();
         private long _size;
 
-        public int MaxFileSizeBytes { get; set; } = 0x4000;
+        public long MaxFileSizeBytes { get; set; } = 0x4000;
         public long MaxCacheSizeBytes { get; set; } = 0x3200000;
 
+        public long MaxCacheSizeMegaBytes
+        {
+            set { MaxCacheSizeBytes = value * 0x100000; }
+        }
+
+        public long MaxFileSizeMegaBytes
+        {
+            set { MaxFileSizeBytes = value * 0x100000; }
+        }
 
         public void EmptyCache()
         {
@@ -42,9 +52,28 @@ namespace RHttpServer.Plugins.Default
             ".json"
         };
 
-        public bool TryGetFile(string filepath, out byte[] content)
+        public bool TryGetFile(string filepath, out MemoryStream content)
         {
             return _cachedPages.TryGetValue(filepath, out content);
+        }
+
+        //public bool TryGetFileStream(string filepath, out byte[] content)
+        //{
+        //    return _cachedPages.TryGetValue(filepath, out content);
+        //}
+
+        public bool TryAdd(string filepath, Stream content)
+        {
+            var len = content.Length;
+            if (len > MaxCacheSizeBytes) return false;
+            if (_size + len > MaxFileSizeBytes) return false;
+            if (!CacheAllowedFileExtension.Contains(Path.GetExtension(filepath)?.ToLowerInvariant() ?? ""))
+                return false;
+            var mem = new MemoryStream();
+            content.CopyTo(mem);
+            var added = _cachedPages.TryAdd(filepath, mem);
+            if (added) _size += len;
+            return added;
         }
 
         public bool TryAdd(string filepath, byte[] content)
@@ -54,7 +83,23 @@ namespace RHttpServer.Plugins.Default
             if (_size + len > MaxFileSizeBytes) return false;
             if (!CacheAllowedFileExtension.Contains(Path.GetExtension(filepath)?.ToLowerInvariant() ?? ""))
                 return false;
-            var added = _cachedPages.TryAdd(filepath, content);
+            var mem = new MemoryStream(content);
+            var added = _cachedPages.TryAdd(filepath, mem);
+            if (added) _size += len;
+            return added;
+        }
+
+
+        public async Task<bool> TryAddAsync(string filepath, Stream content)
+        {
+            var len = content.Length;
+            if (len > MaxCacheSizeBytes) return false;
+            if (_size + len > MaxFileSizeBytes) return false;
+            if (!CacheAllowedFileExtension.Contains(Path.GetExtension(filepath)?.ToLowerInvariant() ?? ""))
+                return false;
+            var mem = new MemoryStream();
+            await content.CopyToAsync(mem);
+            var added = _cachedPages.TryAdd(filepath, mem);
             if (added) _size += len;
             return added;
         }

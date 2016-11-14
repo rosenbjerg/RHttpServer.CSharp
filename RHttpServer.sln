@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleRHttpServer", "Simple
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RHttpServer", "RHttpServer.CSharp\RHttpServer.csproj", "{DFED1F90-EF2C-44FD-A940-2F1AA9E64203}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RHttpServer.Tests", "RHttpServer.Tests\RHttpServer.Tests.csproj", "{3A8A6167-2946-4B56-B08C-D87F452DFED2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{DFED1F90-EF2C-44FD-A940-2F1AA9E64203}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DFED1F90-EF2C-44FD-A940-2F1AA9E64203}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DFED1F90-EF2C-44FD-A940-2F1AA9E64203}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

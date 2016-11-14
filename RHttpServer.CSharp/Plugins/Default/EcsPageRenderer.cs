@@ -27,15 +27,15 @@ namespace RHttpServer.Plugins.Default
             {
                 var m = match.ToString().Trim('<', '>', '¤');
                 var rm = $"<¤{m}¤>";
-                byte[] file = null;
+                MemoryStream mem;
                 StringBuilder rfile;
-                if (cacheOn && cache.TryGetFile(m, out file))
-                    rfile = new StringBuilder(Encoding.UTF8.GetString(file));
+                if (cacheOn && cache.TryGetFile(m, out mem))
+                    rfile = new StringBuilder(Encoding.UTF8.GetString(mem.ToArray()));
                 else if (File.Exists(m))
                 {
-                    file = File.ReadAllBytes(m);
-                    rfile = new StringBuilder(Encoding.UTF8.GetString(file));
-                    if (cacheOn) cache.TryAdd(m, file);
+                    var byt = File.ReadAllBytes(m);
+                    rfile = new StringBuilder(Encoding.UTF8.GetString(byt));
+                    if (cacheOn) cache.TryAdd(m, byt);
                 }
                 else continue;
 
@@ -62,13 +62,13 @@ namespace RHttpServer.Plugins.Default
         {
             if (!filepath.ToLowerInvariant().EndsWith(".ecs"))
                 throw new RHttpServerException("Please use .ecs files when rendering pages");
-            byte[] file = null;
+            MemoryStream mem = null;
             StringBuilder sb;
-            if (CachePages && _cacheMan.TryGetFile(filepath, out file))
-                sb = new StringBuilder(Encoding.UTF8.GetString(file));
+            if (CachePages && _cacheMan.TryGetFile(filepath, out mem))
+                sb = new StringBuilder(Encoding.UTF8.GetString(mem.ToArray()));
             else
             {
-                file = File.ReadAllBytes(filepath);
+                var file = File.ReadAllBytes(filepath);
                 sb = new StringBuilder(Encoding.UTF8.GetString(file));
                 if (CachePages) _cacheMan.TryAdd(filepath, file);
             }

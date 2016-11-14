@@ -1,3 +1,4 @@
+using System.IO;
 using ServiceStack.Text;
 
 namespace RHttpServer.Plugins.Default
@@ -15,6 +16,16 @@ namespace RHttpServer.Plugins.Default
         public T Deserialize<T>(string jsonData)
         {
             return XmlSerializer.DeserializeFromString<T>(jsonData);
+        }
+
+        public void SerializeToStream<T>(T obj, Stream outputStream)
+        {
+            XmlSerializer.SerializeToStream(obj, outputStream);
+        }
+
+        public T DeserializeFromStream<T>(Stream jsonStream)
+        {
+            return XmlSerializer.DeserializeFromStream<T>(jsonStream);
         }
     }
 }

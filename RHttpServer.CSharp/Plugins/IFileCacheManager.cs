@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 
 namespace RHttpServer.Plugins
 {
@@ -9,7 +10,6 @@ namespace RHttpServer.Plugins
     {
         /// <summary>
         ///     File types that are allowed to be cached.
-        ///     The default cache manager can only cache text files, not binary.
         ///     All extension must be lowercase
         /// </summary>
         HashSet<string> CacheAllowedFileExtension { get; }
@@ -34,7 +34,15 @@ namespace RHttpServer.Plugins
         /// <param name="filepath">The path of the file and key to retrieving it</param>
         /// <param name="content">The content of the file</param>
         /// <returns>False if not found in cache</returns>
-        bool TryGetFile(string filepath, out byte[] content);
+        bool TryGetFile(string filepath, out MemoryStream content);
+
+        /// <summary>
+        ///     Attempts to add the file, as it may have been added by another thread.
+        /// </summary>
+        /// <param name="filepath">The path the file should be located at</param>
+        /// <param name="content">The content of the file</param>
+        /// <returns>Returns false if file already added</returns>
+        bool TryAdd(string filepath, Stream content);
 
         /// <summary>
         ///     Attempts to add the file, as it may have been added by another thread.
