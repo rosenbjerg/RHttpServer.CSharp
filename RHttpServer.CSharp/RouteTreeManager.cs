@@ -79,18 +79,18 @@ namespace RHttpServer
                 if (branch != null) tree = branch;
                 else break;
             }
-            if (((branch == null) || (tree.Action == null)) && (len != 0))
+            if ((branch == null || tree.Action == null) && (len != 0))
             {
-                while ((branch == null) || (branch.Route != "*") || (tree.Action == null))
+                while (branch == null || branch.Route != "*" || tree.Action == null)
                 {
                     branch = tree;
-                    if (branch.Stem == null) break;
+                    if (branch?.Stem == null) break;
                     tree = branch.Stem;
                 }
                 generalFallback = true;
                 return tree?.General?.Action;
             }
-            if (tree.Action == null && tree.General != null)
+            if (tree?.Action == null && tree?.General != null)
             {
                 generalFallback = true;
                 return tree.General.Action;

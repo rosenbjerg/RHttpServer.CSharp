@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Web;
 using RHttpServer.Plugins;
+using ServiceStack;
 
 namespace RHttpServer.Response
 {
@@ -35,9 +37,13 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="parTag">The tag id</param>
         /// <param name="parData">The replacement-data for the tag</param>
-        public void Add(string parTag, string parData)
+        /// <param name="htmlEncode">Whether the string should be html encoded</param>
+        public void Add(string parTag, string parData, bool htmlEncode = false)
         {
-            _dict.Add(Renderer.Parametrize(parTag, parData));
+            if (!htmlEncode)
+                _dict.Add(Renderer.Parametrize(parTag, parData));
+            else
+                _dict.Add(Renderer.HtmlParametrize(parTag, HttpUtility.HtmlEncode(parData)));
         }
 
         /// <summary>

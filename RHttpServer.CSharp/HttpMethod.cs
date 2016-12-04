@@ -7,6 +7,7 @@ namespace RHttpServer
         PUT,
         DELETE,
         HEAD,
-        OPTIONS
+        OPTIONS,
+        UNKNOWN
     }
 }

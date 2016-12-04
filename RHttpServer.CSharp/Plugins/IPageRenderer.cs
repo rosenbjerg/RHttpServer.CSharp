@@ -34,5 +34,7 @@ namespace RHttpServer.Plugins
         /// <param name="tag">The tag without any render-specific symbols</param>
         /// <param name="data">The data that will replace the tag when rendering</param>
         KeyValuePair<string, string> ParametrizeObject(string tag, object data);
+
+        KeyValuePair<string, string> HtmlParametrize(string tag, string data);
     }
 }

@@ -12,6 +12,7 @@ namespace RHttpServer.Plugins.Default
     internal sealed class EcsPageRenderer : RPlugin, IPageRenderer
     {
         private IFileCacheManager _cacheMan => UsePlugin<IFileCacheManager>();
+        private IJsonConverter _jsonMan => UsePlugin<IJsonConverter>();
 
         private static string InternalRender(StringBuilder pageContent, RenderParams parameters, bool cacheOn,
             IFileCacheManager cache)
@@ -19,6 +20,7 @@ namespace RHttpServer.Plugins.Default
             if (parameters != null)
                 foreach (var parPair in parameters)
                     pageContent.Replace(parPair.Key, parPair.Value);
+
             var matches = Regex.Matches(pageContent.ToString(),
                 @"(?i)<¤([a-z]:|.)?[\\\/\w]+.(html|ecs|js|css|txt)¤>",
                 RegexOptions.Compiled);
@@ -27,10 +29,10 @@ namespace RHttpServer.Plugins.Default
             {
                 var m = match.ToString().Trim('<', '>', '¤');
                 var rm = $"<¤{m}¤>";
-                MemoryStream mem;
+                byte[] data;
                 StringBuilder rfile;
-                if (cacheOn && cache.TryGetFile(m, out mem))
-                    rfile = new StringBuilder(Encoding.UTF8.GetString(mem.ToArray()));
+                if (cacheOn && cache.TryGetFile(m, out data))
+                    rfile = new StringBuilder(Encoding.UTF8.GetString(data));
                 else if (File.Exists(m))
                 {
                     var byt = File.ReadAllBytes(m);
@@ -62,10 +64,10 @@ namespace RHttpServer.Plugins.Default
         {
             if (!filepath.ToLowerInvariant().EndsWith(".ecs"))
                 throw new RHttpServerException("Please use .ecs files when rendering pages");
-            MemoryStream mem = null;
+            byte[] data;
             StringBuilder sb;
-            if (CachePages && _cacheMan.TryGetFile(filepath, out mem))
-                sb = new StringBuilder(Encoding.UTF8.GetString(mem.ToArray()));
+            if (CachePages && _cacheMan.TryGetFile(filepath, out data))
+                sb = new StringBuilder(Encoding.UTF8.GetString(data));
             else
             {
                 var file = File.ReadAllBytes(filepath);
@@ -88,6 +90,17 @@ namespace RHttpServer.Plugins.Default
         }
 
         /// <summary>
+        ///     Applies ecs html tag scheme to tag to prepare for rendering
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <param name="data"></param>
+        /// <returns>The </returns>
+        public KeyValuePair<string, string> HtmlParametrize(string tag, string data)
+        {
+            return new KeyValuePair<string, string>($"<%={tag.Trim(' ')}=%>", _jsonMan.Serialize(data));
+        }
+
+        /// <summary>
         ///     Applies ecs tag scheme to tag to prepare for rendering.
         ///     Json formats the object, so it can be embedded as a js object
         /// </summary>
@@ -96,7 +109,8 @@ namespace RHttpServer.Plugins.Default
         /// <returns></returns>
         public KeyValuePair<string, string> ParametrizeObject(string tag, object data)
         {
-            return new KeyValuePair<string, string>($"<%{tag.Trim(' ')}%>", UsePlugin<IJsonConverter>().Serialize(data));
+            return new KeyValuePair<string, string>($"<%{tag.Trim(' ')}%>", _jsonMan.Serialize(data));
         }
+
     }
 }

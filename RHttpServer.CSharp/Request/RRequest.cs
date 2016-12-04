@@ -110,15 +110,20 @@ namespace RHttpServer.Request
         /// <param name="filePath">The directory to placed to file in</param>
         /// <param name="filerenamer">Function to rename the file(s)</param>
         /// <returns>Whether the file was saved succesfully</returns>
-        public bool SaveBodyToFile(string filePath, Func<string, string> filerenamer = null)
+        public Task<bool> SaveBodyToFile(string filePath, Func<string, string> filerenamer = null, long maxSizeKb = 1000)
         {
-            if (!UnderlyingRequest.HasEntityBody) return false;
+            var tcs = new TaskCompletionSource<bool>();
+            if (!UnderlyingRequest.HasEntityBody) return Task.FromResult(false);
             var filestreams = new Dictionary<string, Stream>();
 
             var parser = new StreamingMultipartFormDataParser(UnderlyingRequest.InputStream);
             var files = new List<string>();
-            parser.FileHandler += (name, fname, type, disposition, buffer, bytes) =>
+            parser.FileHandler += async (name, fname, type, disposition, buffer, bytes) =>
             {
+                if ((bytes << 0x400) > maxSizeKb)
+                {
+                    tcs.TrySetResult(false);
+                };
                 if (filerenamer != null) fname = filerenamer(fname);
                 Stream stream;
                 if (!filestreams.TryGetValue(name, out stream))
@@ -128,8 +133,10 @@ namespace RHttpServer.Request
                     filestreams.Add(name, stream);
                     files.Add(name);
                 }
-                stream.Write(buffer, 0, bytes);
-                stream.Flush();
+                await stream.WriteAsync(buffer, 0, bytes);
+                await stream.FlushAsync();
+                tcs.TrySetResult(true);
+
             };
             parser.StreamClosedHandler += () =>
             {
@@ -140,11 +147,11 @@ namespace RHttpServer.Request
             {
                 parser.Run();
             }
-            catch (MultipartParseException)
+            catch (MultipartParseException ex)
             {
-                return false;
+                tcs.TrySetException(ex);
             }
-            return true;
+            return tcs.Task;
         }
     }
 }

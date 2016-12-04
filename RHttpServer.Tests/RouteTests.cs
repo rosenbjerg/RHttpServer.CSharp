@@ -37,15 +37,14 @@ namespace RHttpServer.Tests
                 res.SendString("url2url3");
             });
 
-            _testServ.Get("/:param", (req, res) =>
+            _testServ.Get("/param/:param", (req, res) =>
             {
                 res.SendString(req.Params["param"]);
             });
             
             _testServ.Start(true);
         }
-
-        // Use ClassCleanup to run code after all tests in a class have run
+        
         [ClassCleanup]
         public static void MyClassCleanup()
         {
@@ -53,35 +52,51 @@ namespace RHttpServer.Tests
         }
 
         private static HttpServer _testServ;
-        
-        
+
+
         [TestMethod]
-        public void TestRoutes()
+        public void TestDirectRoutes()
         {
             using (var wc = new WebClient())
             {
                 var str = wc.DownloadString("http://localhost:5555/url1");
                 Assert.AreEqual("url1", str);
-                
+
                 str = wc.DownloadString("http://localhost:5555/url2");
                 Assert.AreEqual("url2", str);
 
-                str = wc.DownloadString("http://localhost:5555/url2/faw");
+                str = wc.DownloadString("http://localhost:5555/url2/url3");
+                Assert.AreEqual("url2url3", str);
+            }
+        }
+
+        [TestMethod]
+        public void TestFallback()
+        {
+            using (var wc = new WebClient())
+            {
+                var str = wc.DownloadString("http://localhost:5555/url2/faw");
                 Assert.AreEqual("url2fallback1", str);
 
                 str = wc.DownloadString("http://localhost:5555/url2/dgfsdkglj");
                 Assert.AreEqual("url2fallback1", str);
 
-                str = wc.DownloadString("http://localhost:5555/url2/url3");
-                Assert.AreEqual("url2url3", str);
-
-                str = wc.DownloadString("http://localhost:5555/test");
-                Assert.AreEqual("test", str);
-
-                str = wc.DownloadString("http://localhost:5555/test2");
-                Assert.AreEqual("test2", str);
+                str = wc.DownloadString("http://localhost:5555/urdgfsdkglj");
+                Assert.AreEqual("fallback21", str);
             }
         }
 
+        [TestMethod]
+        public void TestParams()
+        {
+            using (var wc = new WebClient())
+            {
+                var str = wc.DownloadString("http://localhost:5555/param/test");
+                Assert.AreEqual("test", str);
+
+                str = wc.DownloadString("http://localhost:5555/param/test2");
+                Assert.AreEqual("test2", str);
+            }
+        }
     }
 }

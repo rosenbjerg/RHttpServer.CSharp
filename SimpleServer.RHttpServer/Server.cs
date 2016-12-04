@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using RHttpProxy;
 using RHttpServer;
 using RHttpServer.Logging;
 using RHttpServer.Plugins;
@@ -16,7 +17,12 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(5000, 3, "public");
+            //var proxy = new Forwarder(5000, 5, false);
+            //proxy.Add("localhost", new ForwardingProxyHandler("localhost:5001"));
+
+            var server = new HttpServer(5000, 4, "", true);
+            server.CachePublicFiles = false;
+
             server.Get("/daw", (req, res) => { res.SendString("ok1"); });
             server.Get("/daw/*", (req, res) => { res.SendString("no1"); });
 
@@ -70,8 +76,12 @@ namespace SimpleRHttpServer
 
             Logger.Configure(LoggingOption.File, true, "./log.txt");
             //server.InitializeDefaultPlugins(renderCaching: true, securityOn: false, securitySettings: new SimpleHttpSecuritySettings(2, 20000));
-
+            
+            server.InitializeDefaultPlugins(false);
+            server.GetPlugin<IFileCacheManager>().CacheAllowedFileExtension.Add(".ico");
             server.Start(true);
+
+            //proxy.Start(true);
             //var server2 = new HttpServer(5000, 2, "");
             //server2.Get("/", (req, res) => { res.SendString("ok2"); });
             //server2.Start("localhost");

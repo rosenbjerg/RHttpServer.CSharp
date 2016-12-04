@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using RHttpServer.Logging;
@@ -105,6 +106,7 @@ namespace RHttpServer
         private readonly ManualResetEventSlim _stop, _ready;
         private readonly Thread[] _workers;
         private IFileCacheManager _cacheMan;
+        private IHttpSecurityHandler _secMan;
         private bool _defPluginsReady;
         private bool _securityOn;
         private bool _publicFiles;
@@ -280,12 +282,13 @@ namespace RHttpServer
                     Console.WriteLine("You must listen for either http or https (or both) requests for the server to do anything");
                     return;
                 }
+                _listener.IgnoreWriteExceptions = true;
                 _listener.Start();
                 _listenerThread.Start();
 
                 for (var i = 0; i < _workers.Length; i++)
                 {
-                    _workers[i] = new Thread(Worker) { Name = $"RequestHandler #{i}" };
+                    _workers[i] = new Thread(Worker) { Name = $"ReqHandler #{i}" };
                     _workers[i].Start();
                 }
                 Console.WriteLine("RHttpServer v. {0} started", Version);
@@ -305,6 +308,8 @@ namespace RHttpServer
                 Environment.Exit(0);
             }
         }
+        private Func<string, RHttpAction, HttpListenerContext, bool, bool> _reqHandler;
+        private ResponseHandler _resHandler;
 
         /// <summary>
         ///     Initializes any default plugin if no other plugin is registered to same interface
@@ -339,9 +344,14 @@ namespace RHttpServer
             _defPluginsReady = true;
 
             if (securitySettings == null) securitySettings = new SimpleHttpSecuritySettings();
-            _rPluginCollection.Use<IHttpSecurityHandler>().Settings = securitySettings;
+            _secMan = _rPluginCollection.Use<IHttpSecurityHandler>();
+            _secMan.Settings = securitySettings;
             _rPluginCollection.Use<IPageRenderer>().CachePages = renderCaching;
             _cacheMan = _rPluginCollection.Use<IFileCacheManager>();
+            if (CachePublicFiles && _publicFiles)
+                _resHandler = new CachePublicFileRequestHander(PublicDir, _cacheMan, _rPluginCollection);
+            else if (_publicFiles)
+                _resHandler = new PublicFileRequestHander(PublicDir, _rPluginCollection);
             SecurityOn = securityOn;
         }
 
@@ -402,112 +412,70 @@ namespace RHttpServer
                     _ready.Reset();
                     continue;
                 }
-                if (!SecurityOn || _rPluginCollection.Use<IHttpSecurityHandler>().HandleRequest(context.Request))
+                if (!SecurityOn || _secMan.HandleRequest(context.Request))
                     Process(context);
             }
         }
-
+        
         private void Process(HttpListenerContext context)
         {
-            var route = context.Request.Url.AbsolutePath;
-            var method = context.Request.HttpMethod.ToUpper();
-
-            HttpMethod hm;
-            switch (method)
+            var route = context.Request.Url.AbsolutePath.Trim('/');
+            HttpMethod hm = GetMethod(context.Request.HttpMethod);
+            if (hm == HttpMethod.UNKNOWN)
             {
-                case "GET":
-                    hm = HttpMethod.GET;
-                    break;
-                case "POST":
-                    hm = HttpMethod.POST;
-                    break;
-                case "PUT":
-                    hm = HttpMethod.PUT;
-                    break;
-                case "DELETE":
-                    hm = HttpMethod.DELETE;
-                    break;
-                case "OPTIONS":
-                    hm = HttpMethod.OPTIONS;
-                    break;
-                case "HEAD":
-                    hm = HttpMethod.HEAD;
-                    break;
-                default:
-                    Logger.Log("Invalid HTTP method", $"{method} from {context.Request.RemoteEndPoint}");
-                    context.Response.StatusCode = (int) HttpStatusCode.NotFound;
-                    context.Response.Close();
-                    return;
+                Logger.Log("Invalid HTTP method", $"{context.Request.HttpMethod} from {context.Request.RemoteEndPoint}");
+                context.Response.StatusCode = 404;
+                context.Response.Close();
+                return;
             }
 
             bool generalFallback;
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
-            if ((generalFallback || act == null) && _publicFiles)
-            {
-                var p = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries).ToList();
-                p.Insert(0, PublicDir);
-                var publicFile = Path.Combine(p.ToArray());
+            if ((act == null || generalFallback) && _publicFiles && _resHandler.Handle(route, context))
+                return;
 
-                var type = "";
-                if (!RResponse.MimeTypes.TryGetValue(Path.GetExtension(publicFile).ToLowerInvariant(), out type))
-                    type = "application/octet-stream";
-
-                MemoryStream temp = null;
-                if (CachePublicFiles && _cacheMan.TryGetFile(publicFile, out temp))
-                {
-                    new RResponse(context.Response, _rPluginCollection).SendFromStream(temp, temp.Length, false, type);
-                    return;
-                }
-
-                if (File.Exists(publicFile))
-                {
-                    var str = File.Open(publicFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    new RResponse(context.Response, _rPluginCollection).SendFromStream(str, str.Length, false, type);
-                    if (CachePublicFiles) _cacheMan.TryAdd(publicFile, str);
-                    return;
-                }
-
-                var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
-                if (CachePublicFiles && pfiles.Any(iFile => _cacheMan.TryGetFile(iFile, out temp)))
-                {
-                    if (!RResponse.MimeTypes.TryGetValue(Path.GetExtension(publicFile).ToLowerInvariant(), out type))
-                        type = "application/octet-stream";
-                    new RResponse(context.Response, _rPluginCollection).SendFromStream(temp, temp.Length, false, type);
-                    return;
-                }
-
-                publicFile = pfiles.FirstOrDefault(File.Exists);
-                if (!string.IsNullOrEmpty(publicFile))
-                {
-                    var str = File.Open(publicFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    new RResponse(context.Response, _rPluginCollection).SendFromStream(str, str.Length, false, type);
-                    if (CachePublicFiles) _cacheMan.TryAdd(publicFile, str);
-                    return;
-                }
-            }
             if (act != null)
             {
                 RRequest req;
                 RResponse res;
-                CreateReqRes(context, GetParams(act, route), _rPluginCollection, out req, out res);
+                GetReqRes(context, GetParams(act, route), _rPluginCollection, out req, out res);
                 act.Action(req, res);
             }
             else
             {
-                context.Response.StatusCode = (int) HttpStatusCode.NotFound;
+                context.Response.StatusCode = 404;
                 context.Response.Close();
             }
         }
+        
+        private static HttpMethod GetMethod(string input)
+        {
+            switch (input)
+            {
+                case "GET":
+                    return HttpMethod.GET;
+                case "POST":
+                    return HttpMethod.POST;
+                case "PUT":
+                    return HttpMethod.PUT;
+                case "DELETE":
+                    return HttpMethod.DELETE;
+                case "OPTIONS":
+                    return HttpMethod.OPTIONS;
+                case "HEAD":
+                    return HttpMethod.HEAD;
+                default:
+                    return HttpMethod.UNKNOWN;
+            }
+        }
 
-
-
-        private static void CreateReqRes(HttpListenerContext context, RequestParams reqPar, RPluginCollection plugins,
+        private static void GetReqRes(HttpListenerContext context, RequestParams reqPar, RPluginCollection plugins,
             out RRequest req, out RResponse res)
         {
             req = new RRequest(context.Request, reqPar, plugins);
             res = new RResponse(context.Response, plugins);
         }
-
+        
         private static RequestParams GetParams(RHttpAction act, string route)
         {
             var rTree = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
@@ -522,5 +490,165 @@ namespace RHttpServer
         {
             Stop();
         }
+
+        public T GetPlugin<T>()
+        {
+            return _rPluginCollection.Use<T>();
+        }
     }
+    
+    abstract class ResponseHandler
+    {
+        public abstract bool Handle(string route, HttpListenerContext context);
+
+        protected static void GetRange(string range, out int rangeStart, out int rangeEnd)
+        {
+            var split = range.Split('-');
+            if (string.IsNullOrEmpty(split[0]))
+                rangeStart = -1;
+            else
+                int.TryParse(split[0], out rangeStart);
+            if (string.IsNullOrEmpty(split[1]))
+                rangeEnd = -1;
+            else
+                int.TryParse(split[1], out rangeEnd);
+        }
+
+        protected static string GetType(string input)
+        {
+            string ret;
+            if (!RResponse.MimeTypes.TryGetValue(Path.GetExtension(input), out ret))
+                ret = "application/octet-stream";
+            return ret;
+        }
+
+        protected readonly string[] _indexFiles =
+        {
+            "index.html",
+            "index.htm",
+            "index.php",
+            "default.html",
+            "default.htm",
+            "default.php"
+        };
+    }
+
+    sealed class PublicFileRequestHander : ResponseHandler
+    {
+        private readonly string _pdir;
+        private readonly IFileCacheManager _cacheMan;
+        private readonly RPluginCollection _rPluginCollection;
+
+        public PublicFileRequestHander(string publicDir, RPluginCollection rplugins)
+        {
+            _pdir = publicDir;
+            _rPluginCollection = rplugins;
+        }
+
+        public override bool Handle(string route, HttpListenerContext context)
+        {
+            var range = context.Request.Headers["Range"];
+            bool rangeSet = false;
+            int rangeStart = 0, rangeEnd = 0;
+            if (!string.IsNullOrEmpty(range))
+            {
+                range = range.Replace("bytes=", "");
+                GetRange(range, out rangeStart, out rangeEnd);
+                rangeSet = true;
+            }
+
+            var publicFile = Path.Combine(_pdir, route);
+            
+            if (File.Exists(publicFile))
+            {
+                if (rangeSet)
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
+                else
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+                return true;
+            }
+
+            var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
+            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(File.Exists)))
+            {
+                if (rangeSet)
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
+                else
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+                return true;
+            }
+            return false;
+        }
+    }
+
+    sealed class CachePublicFileRequestHander : ResponseHandler
+    {
+        private readonly string _pdir;
+        private readonly IFileCacheManager _cacheMan;
+        private readonly RPluginCollection _rPluginCollection;
+
+        public CachePublicFileRequestHander(string publicDir, IFileCacheManager cache, RPluginCollection rplugins)
+        {
+            _pdir = publicDir;
+            _cacheMan = cache;
+            _rPluginCollection = rplugins;
+        }
+
+        public override bool Handle(string route, HttpListenerContext context)
+        {
+            var range = context.Request.Headers["Range"];
+            bool rangeSet = false;
+            int rangeStart = 0, rangeEnd = 0;
+            if (!string.IsNullOrEmpty(range))
+            {
+                range = range.Replace("bytes=", "");
+                GetRange(range, out rangeStart, out rangeEnd);
+                rangeSet = true;
+            }
+
+
+            var publicFile = Path.Combine(_pdir, route);
+
+            byte[] temp = null;
+            if (_cacheMan.TryGetFile(publicFile, out temp))
+            {
+                if (rangeSet)
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, rangeStart, rangeEnd, GetType(publicFile), publicFile);
+                else
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, GetType(publicFile), publicFile);
+                return true;
+            }
+
+            if (File.Exists(publicFile))
+            {
+                if (rangeSet)
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
+                else
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+                _cacheMan.TryAddFile(publicFile);
+                return true;
+            }
+
+            var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x)).ToList();
+            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(iFile => _cacheMan.TryGetFile(iFile, out temp))))
+            {
+                if (rangeSet)
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, rangeStart, rangeEnd, GetType(publicFile), publicFile);
+                else
+                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, GetType(publicFile), publicFile);
+                return true;
+            }
+            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(File.Exists)))
+            {
+                if (rangeSet)
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
+                else
+                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+                _cacheMan.TryAddFile(publicFile);
+                return true;
+            }
+            return false;
+        }
+    }
+    
 }

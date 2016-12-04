@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RHttpServer", "RHttpServer.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RHttpServer.Tests", "RHttpServer.Tests\RHttpServer.Tests.csproj", "{3A8A6167-2946-4B56-B08C-D87F452DFED2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RHttpProxy", "RHttpProxy\RHttpProxy.csproj", "{7B4FCE6D-34A2-4304-BFCC-55B113E8754A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A8A6167-2946-4B56-B08C-D87F452DFED2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B4FCE6D-34A2-4304-BFCC-55B113E8754A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B4FCE6D-34A2-4304-BFCC-55B113E8754A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B4FCE6D-34A2-4304-BFCC-55B113E8754A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B4FCE6D-34A2-4304-BFCC-55B113E8754A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
