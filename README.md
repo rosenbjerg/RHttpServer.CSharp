@@ -100,7 +100,6 @@ The file extension is enforced by the default page renderer to avoid confusion w
 
 The format is inspired by the ejs format, though you cannot embed JavaScript or C# for that matter, in the pages.
 
-This was chosen because i did NOT like the idea behind it.
 
 Embed your dynamic content using RenderParams instead of embedding the code for generation of the content in the html.
 
