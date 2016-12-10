@@ -14,7 +14,7 @@ The tool will automatically download all missing nuget dependencies, if a packag
 
 rhsb can also be used to start the server in the background, and later-on, stop it again
 
-You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb-installer/download)
+You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb/download)
 
 The tool requires the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) to be installed if using Linux or Mac OSX
 
@@ -87,23 +87,22 @@ register it before initializing default plugins and/or starting the server.
 
 ## The .ecs file format
 The .ecs file format is merely an extension used for html pages with ecs-tags.
-ecs-tags have the form <%TAG%>, so if i wanted a tag named 'foo' on my page, 
-so that it could be replaced later, the tag would look like this: <%foo%>.
 
-You can also embed files containing page content, like a header, or a footer.
+#### Tags
+- <%foo%> will get replaced with the text data in the RenderParams object passed to the renderer
 
-An ecs tag for a file have the following format: <¤PATH¤>.
+- <%=foo=%> will get replaced with a HTML encoded version of the text data in the RenderParams object passed to the renderer
 
-The PATH should either be relative to the server executable, or the full path of the file.
-
-PATH example using relative path: <¤./public/header.html¤>.
+- <¤files/style.css¤> will get replaced with the content of the file with the specified path. Must be absolute or relative to the server executable. Only html, ecs, js, css and txt is supported for now, but if you have a good reason to include another filetype, please create an issue regarding that.
 
 
-- The file extension is enforced by the default page renderer to avoid confusion with regular html files without tags.
-- The format is inspired by the ejs format, though you cannot embed JavaScript or C# for that matter, in the pages.
+The file extension is enforced by the default page renderer to avoid confusion with regular html files without tags.
+
+The format is inspired by the ejs format, though you cannot embed JavaScript or C# for that matter, in the pages.
+
 This was chosen because i did NOT like the idea behind it.
 
-Embed your dynamic content using RenderParams instead of embedding the code for generation of the content in the html. Please, separation of concerns.
+Embed your dynamic content using RenderParams instead of embedding the code for generation of the content in the html.
 
 
 ## Why?
