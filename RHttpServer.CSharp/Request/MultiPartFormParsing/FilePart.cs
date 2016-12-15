@@ -1,10 +1,11 @@
 // Taken from https://github.com/Vodurden/Http-Multipart-Data-Parser by Jake Woods
+
 using System.IO;
 using System.Linq;
 
 namespace RHttpServer.Request.MultiPartFormParsing
 {
-    internal class FilePart
+    internal sealed class FilePart
     {
         #region Constructors and Destructors
 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Web;
 using RHttpServer.Plugins;
-using ServiceStack;
 
 namespace RHttpServer.Response
 {
@@ -11,7 +10,7 @@ namespace RHttpServer.Response
     /// </summary>
     public sealed class RenderParams : IEnumerable<KeyValuePair<string, string>>
     {
-        internal static IPageRenderer Renderer;
+        internal static IJsonConverter Converter;
 
 
         private readonly IDictionary<string, string> _dict = new Dictionary<string, string>();
@@ -37,13 +36,9 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="parTag">The tag id</param>
         /// <param name="parData">The replacement-data for the tag</param>
-        /// <param name="htmlEncode">Whether the string should be html encoded</param>
-        public void Add(string parTag, string parData, bool htmlEncode = false)
+        public void Add(string parTag, string parData)
         {
-            if (!htmlEncode)
-                _dict.Add(Renderer.Parametrize(parTag, parData));
-            else
-                _dict.Add(Renderer.HtmlParametrize(parTag, HttpUtility.HtmlEncode(parData)));
+            _dict.Add(new KeyValuePair<string, string>(parTag, parData));
         }
 
         /// <summary>
@@ -53,7 +48,7 @@ namespace RHttpServer.Response
         /// <param name="parData">The replacement-data object for the tag</param>
         public void Add(string parTag, object parData)
         {
-            _dict.Add(Renderer.ParametrizeObject(parTag, parData));
+            _dict.Add(new KeyValuePair<string, string>(parTag, Converter.Serialize(parData)));
         }
 
         /// <summary>

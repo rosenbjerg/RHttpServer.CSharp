@@ -2,26 +2,26 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.3.8</version>
-    <title>RHS - RHttpServer</title>
+    <version>1.0.4.1</version>
+    <title>RHS - RedHttpServer</title>
     <authors>Malte Rosenbjerg</authors>
     <owners>Rosenbjerg Softworks</owners>
     <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
     <projectUrl>https://github.com/rosenbjerg/RHttpServer.CSharp</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>
-RHttpServer is a simple server framework for creating powerful http(s) servers for websites with dynamic and static content, or APIs, in a very simple manner
+RedHttpServer is a simple server framework for creating powerful http(s) servers for websites with dynamic and static content, or APIs, in a very simple manner
 	</description>
 	<summary>
-RHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with express.
+RedHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with express.
 The framework includes plugins for json and xml serialization/deserialization, request body parsing and file caching for improved performance.
 Furthermore a simple plugin for dynamic page rendering, which offers the ability to embed dynamically created content in the html file, even js objects and text, ecs or html files (and a couple more).
 The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
-    <releaseNotes>Range requests supported</releaseNotes>
+    <releaseNotes>Bugfixes</releaseNotes>
     <copyright>Copyright 2016</copyright>
-    <tags>RHttpServer rhs http server api rendering ecs</tags>
+    <tags>RHttpServer red rhs http server api rendering ecs</tags>
   <dependencies>
   <group targetFramework="net452">
 		<dependency id="ServiceStack.Text" version="4.5.0" />

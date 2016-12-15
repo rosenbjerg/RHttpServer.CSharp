@@ -1,4 +1,5 @@
 // Taken from https://github.com/Vodurden/Http-Multipart-Data-Parser by Jake Woods
+
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace RHttpServer.Request.MultiPartFormParsing
 {
-    internal class MultipartFormDataParser
+    internal sealed class MultipartFormDataParser
     {
         #region Constants
 

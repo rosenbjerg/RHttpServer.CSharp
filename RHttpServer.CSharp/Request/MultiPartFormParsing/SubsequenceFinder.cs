@@ -1,9 +1,10 @@
 // Taken from https://github.com/Vodurden/Http-Multipart-Data-Parser by Jake Woods
+
 using System.Collections.Generic;
 
 namespace RHttpServer.Request.MultiPartFormParsing
 {
-    internal class SubsequenceFinder
+    internal sealed class SubsequenceFinder
     {
         #region Public Methods and Operators
 

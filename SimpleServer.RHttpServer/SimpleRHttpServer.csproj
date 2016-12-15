@@ -50,10 +50,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RHttpProxy\RHttpProxy.csproj">
-      <Project>{7b4fce6d-34a2-4304-bfcc-55b113e8754a}</Project>
-      <Name>RHttpProxy</Name>
-    </ProjectReference>
     <ProjectReference Include="..\RHttpServer.CSharp\RHttpServer.csproj">
       <Project>{dfed1f90-ef2c-44fd-a940-2f1aa9e64203}</Project>
       <Name>RHttpServer</Name>

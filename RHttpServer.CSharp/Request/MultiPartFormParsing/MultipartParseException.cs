@@ -1,9 +1,10 @@
 // Taken from https://github.com/Vodurden/Http-Multipart-Data-Parser by Jake Woods
+
 using System;
 
 namespace RHttpServer.Request.MultiPartFormParsing
 {
-    internal class MultipartParseException : Exception
+    internal sealed class MultipartParseException : Exception
     {
         #region Constructors and Destructors
 

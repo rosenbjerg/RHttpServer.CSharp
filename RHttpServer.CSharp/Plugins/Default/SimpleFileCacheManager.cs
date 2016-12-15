@@ -2,27 +2,34 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace RHttpServer.Plugins.Default
 {
     internal class SimpleFileCacheManager : RPlugin, IFileCacheManager
     {
         private readonly ConcurrentDictionary<string, byte[]> _cachedPages = new ConcurrentDictionary<string, byte[]>();
+        private readonly object _lock = new object();
         private long _size;
-        private object _lock = new object();
 
         public long MaxFileSizeBytes { get; set; } = 0x4000;
         public long MaxCacheSizeBytes { get; set; } = 0x3200000;
 
         public long MaxCacheSizeMegaBytes
         {
-            set { MaxCacheSizeBytes = value * 0x100000; }
+            set { MaxCacheSizeBytes = value*0x100000; }
         }
 
         public long MaxFileSizeMegaBytes
         {
-            set { MaxFileSizeBytes = value * 0x100000; }
+            set { MaxFileSizeBytes = value*0x100000; }
+        }
+
+        private void IncrementSize(long toAdd)
+        {
+            lock (_lock)
+            {
+                _size += toAdd;
+            }
         }
 
         public void EmptyCache()
@@ -39,20 +46,21 @@ namespace RHttpServer.Plugins.Default
             return _size + filesizeBytes <= MaxCacheSizeBytes;
         }
 
-        public HashSet<string> CacheAllowedFileExtension { get; } = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
-        {
-            ".html",
-            ".htm",
-            ".xhtml",
-            ".ecs",
-            ".js",
-            ".css",
-            ".php",
-            ".txt",
-            ".xml",
-            ".csv",
-            ".json"
-        };
+        public HashSet<string> CacheAllowedFileExtension { get; } =
+            new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                ".html",
+                ".htm",
+                ".xhtml",
+                ".ecs",
+                ".js",
+                ".css",
+                ".php",
+                ".txt",
+                ".xml",
+                ".csv",
+                ".json"
+            };
 
         public bool TryGetFile(string filepath, out byte[] content)
         {
@@ -70,7 +78,7 @@ namespace RHttpServer.Plugins.Default
             if (added) IncrementSize(len);
             return added;
         }
-        
+
         public void Configure(int maxFileSizeBytes, long maxCacheSizeBytes)
         {
             MaxFileSizeBytes = maxFileSizeBytes;
@@ -87,14 +95,6 @@ namespace RHttpServer.Plugins.Default
             var added = _cachedPages.TryAdd(filepath, File.ReadAllBytes(filepath));
             if (added) IncrementSize(len);
             return true;
-        }
-
-        private void IncrementSize(long toAdd)
-        {
-            lock (_lock)
-            {
-                _size += toAdd;
-            }
         }
     }
 }

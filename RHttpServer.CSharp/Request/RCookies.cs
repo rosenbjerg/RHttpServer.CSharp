@@ -7,7 +7,7 @@ namespace RHttpServer.Request
     /// <summary>
     ///     Ease-of-use wrapper for request cookies
     /// </summary>
-    public class RCookies
+    public sealed class RCookies
     {
         internal RCookies(CookieCollection cocol)
         {

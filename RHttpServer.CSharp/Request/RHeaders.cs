@@ -7,7 +7,7 @@ namespace RHttpServer.Request
     /// <summary>
     ///     Ease-of-use wrapper for request headers
     /// </summary>
-    public class RHeaders
+    public sealed class RHeaders
     {
         internal RHeaders(NameValueCollection headers)
         {

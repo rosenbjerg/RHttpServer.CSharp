@@ -68,7 +68,7 @@ namespace RHttpServer.Plugins.Default
         public bool HandleRequest(HttpListenerRequest req)
         {
             var url = req.RemoteEndPoint?.Address.ToString();
-            if (url == null || Settings == null) return true;
+            if ((url == null) || (Settings == null)) return true;
             HttpRequester vis;
             if (_blacklist.ContainsKey(url)) return false;
 

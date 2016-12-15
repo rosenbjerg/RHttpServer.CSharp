@@ -2,7 +2,7 @@ using System;
 
 namespace RHttpServer
 {
-    internal class RouteTreeManager
+    internal sealed class RouteTreeManager
     {
         private readonly RouteTree _deleteTree = new RouteTree("", null);
         private readonly RouteTree _getTree = new RouteTree("", null);
@@ -17,22 +17,28 @@ namespace RHttpServer
             switch (method)
             {
                 case HttpMethod.GET:
-                    return AddToTree(_getTree, action);
+                    AddToTree(_getTree, action);
+                    break;
                 case HttpMethod.POST:
-                    return AddToTree(_postTree, action);
+                    AddToTree(_postTree, action);
+                    break;
                 case HttpMethod.PUT:
-                    return AddToTree(_putTree, action);
+                    AddToTree(_putTree, action);
+                    break;
                 case HttpMethod.DELETE:
-                    return AddToTree(_deleteTree, action);
+                    AddToTree(_deleteTree, action);
+                    break;
                 case HttpMethod.HEAD:
-                    return AddToTree(_headTree, action);
+                    AddToTree(_headTree, action);
+                    break;
                 case HttpMethod.OPTIONS:
-                    return AddToTree(_optionsTree, action);
+                    AddToTree(_optionsTree, action);
+                    break;
             }
             return false;
         }
 
-        private bool AddToTree(RouteTree tree, RHttpAction action)
+        private void AddToTree(RouteTree tree, RHttpAction action)
         {
             var rTree = action.RouteTree;
             var len = rTree.Length;
@@ -43,7 +49,6 @@ namespace RHttpServer
             }
             if (tree.Action != null) throw new RHttpServerException("Cannot add two actions to the same route");
             tree.Action = action;
-            return true;
         }
 
         internal RHttpAction SearchInTree(string route, HttpMethod meth, out bool generalFallback)
@@ -79,9 +84,9 @@ namespace RHttpServer
                 if (branch != null) tree = branch;
                 else break;
             }
-            if ((branch == null || tree.Action == null) && (len != 0))
+            if (((branch == null) || (tree.Action == null)) && (len != 0))
             {
-                while (branch == null || branch.Route != "*" || tree.Action == null)
+                while ((branch == null) || (branch.Route != "*") || (tree.Action == null))
                 {
                     branch = tree;
                     if (branch?.Stem == null) break;
@@ -90,7 +95,7 @@ namespace RHttpServer
                 generalFallback = true;
                 return tree?.General?.Action;
             }
-            if (tree?.Action == null && tree?.General != null)
+            if ((tree?.Action == null) && (tree?.General != null))
             {
                 generalFallback = true;
                 return tree.General.Action;

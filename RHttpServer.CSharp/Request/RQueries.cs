@@ -6,7 +6,7 @@ namespace RHttpServer.Request
     /// <summary>
     ///     Ease-of-use wrapper for request queries
     /// </summary>
-    public class RQueries
+    public sealed class RQueries
     {
         internal RQueries(NameValueCollection queryString)
         {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace RHttpServer
 {
-    internal class RouteTree
+    internal sealed class RouteTree
     {
         internal RouteTree(string route, RouteTree stem)
         {

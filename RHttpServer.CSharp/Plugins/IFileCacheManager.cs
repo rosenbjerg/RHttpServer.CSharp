@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
 
 namespace RHttpServer.Plugins
 {
@@ -35,7 +34,7 @@ namespace RHttpServer.Plugins
         /// <param name="content">The content of the file</param>
         /// <returns>False if not found in cache</returns>
         bool TryGetFile(string filepath, out byte[] content);
-        
+
         /// <summary>
         ///     Attempts to add the file, as it may have been added by another thread.
         /// </summary>
@@ -43,6 +42,12 @@ namespace RHttpServer.Plugins
         /// <param name="content">The content of the file</param>
         /// <returns>Returns false if file already added</returns>
         bool TryAdd(string filepath, byte[] content);
+
+        /// <summary>
+        ///     Attempts to add the file, as it may have been added by another thread.
+        /// </summary>
+        /// <param name="filepath"></param>
+        /// <returns>Returns false if file already added</returns>
         bool TryAddFile(string filepath);
 
         /// <summary>
@@ -51,6 +56,5 @@ namespace RHttpServer.Plugins
         /// <param name="maxFileSizeBytes">Default cache manager uses 0x4000 bytes as default (16 kb)</param>
         /// <param name="maxCacheSizeBytes">Default cache manager uses 0x3200000 bytes as default(50 mb)</param>
         void Configure(int maxFileSizeBytes, long maxCacheSizeBytes);
-
     }
 }

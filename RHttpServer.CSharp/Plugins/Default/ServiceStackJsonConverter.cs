@@ -12,7 +12,7 @@ namespace RHttpServer.Plugins.Default
         {
             return JsonSerializer.SerializeToString(obj);
         }
-        
+
         public T Deserialize<T>(string jsonData)
         {
             return JsonSerializer.DeserializeFromString<T>(jsonData);
@@ -27,6 +27,5 @@ namespace RHttpServer.Plugins.Default
         {
             return JsonSerializer.DeserializeFromStream<T>(jsonStream);
         }
-
     }
 }

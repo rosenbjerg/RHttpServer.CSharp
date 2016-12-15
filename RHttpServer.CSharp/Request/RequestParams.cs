@@ -5,7 +5,7 @@ namespace RHttpServer.Request
     /// <summary>
     ///     Object containing the parameters for a request
     /// </summary>
-    public class RequestParams
+    public sealed class RequestParams
     {
         internal RequestParams(Dictionary<string, string> dict)
         {

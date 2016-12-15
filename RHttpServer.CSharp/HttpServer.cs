@@ -5,8 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using RHttpServer.Logging;
 using RHttpServer.Plugins;
@@ -20,15 +18,10 @@ namespace RHttpServer
     ///     Represents a HTTP server.
     ///     It should be set up before start
     /// </summary>
-    public class HttpServer : IDisposable
+    public sealed class HttpServer : IDisposable
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
-
-        /// <summary>
-        /// Whether a header containing server info should be included
-        /// </summary>
-        public static bool IncludeServerHeader { get; set; } = true;
 
         /// <summary>
         ///     Constructs a server instance with given port and using the given path as public folder.
@@ -56,48 +49,7 @@ namespace RHttpServer
             _listener = new HttpListener();
             _listenerThread = new Thread(HandleRequests) {Name = "ListenerThread"};
         }
-
-        /// <summary>
-        ///     Constructs a server instance with an automatically found port and using the given path as public folder.
-        ///     Set path to null or empty string if none wanted
-        /// </summary>
-        /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
-        /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
-        /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
-        public HttpServer(int requestHandlerThreads, string path = "", bool throwExceptions = false)
-        {
-            if (requestHandlerThreads < 1)
-            {
-                requestHandlerThreads = 1;
-                Logger.Log("Thread setting", "Minimum 1 request-handler threads");
-            }
-            ThrowExceptions = throwExceptions;
-            PublicDir = path;
-            _publicFiles = Directory.Exists(path);
-            //get an empty port
-            var l = new TcpListener(IPAddress.Loopback, 0);
-            l.Start();
-            Port = ((IPEndPoint) l.LocalEndpoint).Port;
-            l.Stop();
-            _workers = new Thread[requestHandlerThreads];
-            _queue = new ConcurrentQueue<HttpListenerContext>();
-            _stop = new ManualResetEventSlim(false);
-            _ready = new ManualResetEventSlim(false);
-            _listener = new HttpListener();
-            _listenerThread = new Thread(HandleRequests) {Name = "ListenerThread"};
-        }
-
-        private readonly string[] _indexFiles =
-        {
-            "index.html",
-            "index.htm",
-            "index.php",
-            "default.html",
-            "default.htm",
-            "default.php"
-        };
-
-
+        
         private readonly HttpListener _listener;
         private readonly Thread _listenerThread;
         private readonly ConcurrentQueue<HttpListenerContext> _queue;
@@ -106,10 +58,17 @@ namespace RHttpServer
         private readonly ManualResetEventSlim _stop, _ready;
         private readonly Thread[] _workers;
         private IFileCacheManager _cacheMan;
-        private IHttpSecurityHandler _secMan;
         private bool _defPluginsReady;
-        private bool _securityOn;
         private bool _publicFiles;
+        
+        private ResponseHandler _resHandler;
+        private IHttpSecurityHandler _secMan;
+        private bool _securityOn;
+
+        /// <summary>
+        ///     Whether a header containing server info should be included
+        /// </summary>
+        public static bool IncludeServerHeader { get; set; } = true;
 
         /// <summary>
         ///     The publicly available folder
@@ -260,14 +219,18 @@ namespace RHttpServer
         }
 
         /// <summary>
-        ///     Starts the server, and all request handling threads <para />
-        ///     Only answers to requests with specified prefixes <para />
-        ///     Specify in following format: <para />
-        ///     "+" , "*" , "localhost" , "example.com", "123.12.34.56"<para />
+        ///     Starts the server, and all request handling threads
+        ///     <para />
+        ///     Only answers to requests with specified prefixes
+        ///     <para />
+        ///     Specify in following format:
+        ///     <para />
+        ///     "+" , "*" , "localhost" , "example.com", "123.12.34.56"
+        ///     <para />
         ///     Protocol and port will be added automatically
         /// </summary>
         /// <param name="listeningPrefixes">The prefixes the server will listen for requests with</param>
-        public void Start(params string[] listeningPrefixes) 
+        public void Start(params string[] listeningPrefixes)
         {
             try
             {
@@ -279,21 +242,22 @@ namespace RHttpServer
                 }
                 if (_listener.Prefixes.Count == 0)
                 {
-                    Console.WriteLine("You must listen for either http or https (or both) requests for the server to do anything");
+                    Console.WriteLine(
+                        "You must listen for either http or https (or both) requests for the server to do anything");
                     return;
                 }
-                _listener.IgnoreWriteExceptions = true;
                 _listener.Start();
                 _listenerThread.Start();
 
                 for (var i = 0; i < _workers.Length; i++)
                 {
-                    _workers[i] = new Thread(Worker) { Name = $"ReqHandler #{i}" };
+                    _workers[i] = new Thread(Worker) {Name = $"ReqHandler #{i}"};
                     _workers[i].Start();
                 }
                 Console.WriteLine("RHttpServer v. {0} started", Version);
-                if (_listener.Prefixes.First() == "localhost") Logger.Log("Server visibility", "Listening on localhost only");
-                RenderParams.Renderer = _rPluginCollection.Use<IPageRenderer>();
+                if (_listener.Prefixes.First() == "localhost")
+                    Logger.Log("Server visibility", "Listening on localhost only");
+                RenderParams.Converter = _rPluginCollection.Use<IJsonConverter>();
                 _publicFiles = !string.IsNullOrWhiteSpace(PublicDir);
             }
             catch (SocketException)
@@ -304,12 +268,11 @@ namespace RHttpServer
             catch (HttpListenerException)
             {
                 Console.WriteLine("Could not obtain permission to listen for '{0}' on selected port\n" +
-                                  "Please aquire the permission or start the server as local-only", string.Join(", ", listeningPrefixes));
+                                  "Please aquire the permission or start the server as local-only",
+                    string.Join(", ", listeningPrefixes));
                 Environment.Exit(0);
             }
         }
-        private Func<string, RHttpAction, HttpListenerContext, bool, bool> _reqHandler;
-        private ResponseHandler _resHandler;
 
         /// <summary>
         ///     Initializes any default plugin if no other plugin is registered to same interface
@@ -337,7 +300,7 @@ namespace RHttpServer
 
             if (!_rPluginCollection.IsRegistered<IFileCacheManager>())
                 RegisterPlugin<IFileCacheManager, SimpleFileCacheManager>(new SimpleFileCacheManager());
-
+            
             if (!_rPluginCollection.IsRegistered<IPageRenderer>())
                 RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
 
@@ -370,20 +333,19 @@ namespace RHttpServer
 
         private void HandleRequests()
         {
-            try
+            while (_listener.IsListening)
             {
-                while (_listener.IsListening)
+                try
                 {
                     var context = _listener.BeginGetContext(ContextReady, null);
-
-                    if (0 == WaitHandle.WaitAny(new[] {_stop.WaitHandle, context.AsyncWaitHandle}))
+                    if (0 == WaitHandle.WaitAny(new[] { _stop.WaitHandle, context.AsyncWaitHandle }))
                         return;
                 }
-            }
-            catch (Exception ex)
-            {
-                if (ThrowExceptions) throw;
-                Logger.Log(ex);
+                catch (Exception ex)
+                {
+                    if (ThrowExceptions) throw;
+                    Logger.Log(ex);
+                }
             }
         }
 
@@ -403,27 +365,36 @@ namespace RHttpServer
 
         private void Worker()
         {
-            WaitHandle[] wait = { _ready.WaitHandle, _stop.WaitHandle };
+            WaitHandle[] wait = {_ready.WaitHandle, _stop.WaitHandle};
+            
             while (0 == WaitHandle.WaitAny(wait))
             {
-                HttpListenerContext context;
-                if (!_queue.TryDequeue(out context))
+                try
                 {
-                    _ready.Reset();
-                    continue;
+                    HttpListenerContext context;
+                    if (!_queue.TryDequeue(out context))
+                    {
+                        _ready.Reset();
+                        continue;
+                    }
+                    if (!SecurityOn || _secMan.HandleRequest(context.Request))
+                        Process(context);
                 }
-                if (!SecurityOn || _secMan.HandleRequest(context.Request))
-                    Process(context);
+                catch (Exception ex)
+                {
+                    if (ThrowExceptions) throw;
+                    Logger.Log(ex);
+                }
             }
         }
-        
+
         private void Process(HttpListenerContext context)
         {
             var route = context.Request.Url.AbsolutePath.Trim('/');
-            HttpMethod hm = GetMethod(context.Request.HttpMethod);
+            var hm = GetMethod(context.Request.HttpMethod);
             if (hm == HttpMethod.UNKNOWN)
             {
-                Logger.Log("Invalid HTTP method", $"{context.Request.HttpMethod} from {context.Request.RemoteEndPoint}");
+                Logger.Log("Unsupported HTTP method", $"{context.Request.HttpMethod} from {context.Request.RemoteEndPoint}");
                 context.Response.StatusCode = 404;
                 context.Response.Close();
                 return;
@@ -431,7 +402,7 @@ namespace RHttpServer
 
             bool generalFallback;
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
-            if ((act == null || generalFallback) && _publicFiles && _resHandler.Handle(route, context))
+            if (((act == null) || generalFallback) && _publicFiles && _resHandler.Handle(route, context))
                 return;
 
             if (act != null)
@@ -447,7 +418,7 @@ namespace RHttpServer
                 context.Response.Close();
             }
         }
-        
+
         private static HttpMethod GetMethod(string input)
         {
             switch (input)
@@ -475,7 +446,7 @@ namespace RHttpServer
             req = new RRequest(context.Request, reqPar, plugins);
             res = new RResponse(context.Response, plugins);
         }
-        
+
         private static RequestParams GetParams(RHttpAction act, string route)
         {
             var rTree = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
@@ -485,170 +456,20 @@ namespace RHttpServer
                 .ToDictionary(kvp => kvp.Value, kvp => rTree[kvp.Key]);
             return new RequestParams(dict);
         }
-        
-        public void Dispose()
-        {
-            Stop();
-        }
 
+        /// <summary>
+        ///     Returns the plugin registered to type T, if any
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public T GetPlugin<T>()
         {
             return _rPluginCollection.Use<T>();
         }
-    }
-    
-    abstract class ResponseHandler
-    {
-        public abstract bool Handle(string route, HttpListenerContext context);
 
-        protected static void GetRange(string range, out int rangeStart, out int rangeEnd)
+        public void Dispose()
         {
-            var split = range.Split('-');
-            if (string.IsNullOrEmpty(split[0]))
-                rangeStart = -1;
-            else
-                int.TryParse(split[0], out rangeStart);
-            if (string.IsNullOrEmpty(split[1]))
-                rangeEnd = -1;
-            else
-                int.TryParse(split[1], out rangeEnd);
-        }
-
-        protected static string GetType(string input)
-        {
-            string ret;
-            if (!RResponse.MimeTypes.TryGetValue(Path.GetExtension(input), out ret))
-                ret = "application/octet-stream";
-            return ret;
-        }
-
-        protected readonly string[] _indexFiles =
-        {
-            "index.html",
-            "index.htm",
-            "index.php",
-            "default.html",
-            "default.htm",
-            "default.php"
-        };
-    }
-
-    sealed class PublicFileRequestHander : ResponseHandler
-    {
-        private readonly string _pdir;
-        private readonly IFileCacheManager _cacheMan;
-        private readonly RPluginCollection _rPluginCollection;
-
-        public PublicFileRequestHander(string publicDir, RPluginCollection rplugins)
-        {
-            _pdir = publicDir;
-            _rPluginCollection = rplugins;
-        }
-
-        public override bool Handle(string route, HttpListenerContext context)
-        {
-            var range = context.Request.Headers["Range"];
-            bool rangeSet = false;
-            int rangeStart = 0, rangeEnd = 0;
-            if (!string.IsNullOrEmpty(range))
-            {
-                range = range.Replace("bytes=", "");
-                GetRange(range, out rangeStart, out rangeEnd);
-                rangeSet = true;
-            }
-
-            var publicFile = Path.Combine(_pdir, route);
-            
-            if (File.Exists(publicFile))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                return true;
-            }
-
-            var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x));
-            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(File.Exists)))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                return true;
-            }
-            return false;
+            Stop();
         }
     }
-
-    sealed class CachePublicFileRequestHander : ResponseHandler
-    {
-        private readonly string _pdir;
-        private readonly IFileCacheManager _cacheMan;
-        private readonly RPluginCollection _rPluginCollection;
-
-        public CachePublicFileRequestHander(string publicDir, IFileCacheManager cache, RPluginCollection rplugins)
-        {
-            _pdir = publicDir;
-            _cacheMan = cache;
-            _rPluginCollection = rplugins;
-        }
-
-        public override bool Handle(string route, HttpListenerContext context)
-        {
-            var range = context.Request.Headers["Range"];
-            bool rangeSet = false;
-            int rangeStart = 0, rangeEnd = 0;
-            if (!string.IsNullOrEmpty(range))
-            {
-                range = range.Replace("bytes=", "");
-                GetRange(range, out rangeStart, out rangeEnd);
-                rangeSet = true;
-            }
-
-
-            var publicFile = Path.Combine(_pdir, route);
-
-            byte[] temp = null;
-            if (_cacheMan.TryGetFile(publicFile, out temp))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, rangeStart, rangeEnd, GetType(publicFile), publicFile);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, GetType(publicFile), publicFile);
-                return true;
-            }
-
-            if (File.Exists(publicFile))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                _cacheMan.TryAddFile(publicFile);
-                return true;
-            }
-
-            var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x)).ToList();
-            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(iFile => _cacheMan.TryGetFile(iFile, out temp))))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, rangeStart, rangeEnd, GetType(publicFile), publicFile);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, GetType(publicFile), publicFile);
-                return true;
-            }
-            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(File.Exists)))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                _cacheMan.TryAddFile(publicFile);
-                return true;
-            }
-            return false;
-        }
-    }
-    
 }

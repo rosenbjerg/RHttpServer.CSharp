@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using System.Web;
 using RHttpServer.Plugins;
 using RHttpServer.Request.MultiPartFormParsing;
 
@@ -18,16 +20,13 @@ namespace RHttpServer.Request
         {
             UnderlyingRequest = req;
             Params = par;
-            _bodyParser = pluginCollection.Use<IBodyParser>();
+            _rp = pluginCollection;
         }
-
-        private readonly IBodyParser _bodyParser;
-
+        
         private RCookies _cookies;
-
         private RHeaders _headers;
-
         private RQueries _queries;
+        private readonly RPluginCollection _rp;
 
         /// <summary>
         ///     The query elements of the request
@@ -50,11 +49,11 @@ namespace RHttpServer.Request
         public RequestParams Params { get; }
 
         /// <summary>
-        ///     The underlying HttpListenerRequest <para/>
+        ///     The underlying HttpListenerRequest
+        ///     <para />
         ///     The implementation of RRequest is leaky, to avoid limiting you
         /// </summary>
         public HttpListenerRequest UnderlyingRequest { get; }
-        
 
 
         /// <summary>
@@ -64,7 +63,7 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public Stream GetBodyStream()
         {
-            if (UnderlyingRequest.HasEntityBody || UnderlyingRequest.InputStream == Stream.Null) return null;
+            if (UnderlyingRequest.HasEntityBody || (UnderlyingRequest.InputStream == Stream.Null)) return null;
             return UnderlyingRequest.InputStream;
         }
 
@@ -75,7 +74,7 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public T ParseBody<T>()
         {
-            return _bodyParser.ParseBody<T>(UnderlyingRequest);
+            return _rp.Use<IBodyParser>().ParseBody<T>(UnderlyingRequest);
         }
 
         /// <summary>
@@ -85,22 +84,21 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public async Task<T> ParseBodyAsync<T>()
         {
-            return await _bodyParser.ParseBodyAsync<T>(UnderlyingRequest);
+            return await _rp.Use<IBodyParser>().ParseBodyAsync<T>(UnderlyingRequest);
         }
 
         /// <summary>
         ///     Returns form-data from post request, if any
         /// </summary>
         /// <returns></returns>
-        public Dictionary<string, string> GetBodyPostFormData()
+        public NameValueCollection GetBodyPostFormData()
         {
             if (!UnderlyingRequest.ContentType.Contains("x-www-form-urlencoded"))
-                return new Dictionary<string, string>();
+                return new NameValueCollection();
             using (var reader = new StreamReader(UnderlyingRequest.InputStream))
             {
                 var txt = reader.ReadToEnd();
-                var pars = txt.Split(new[] {'&'}, StringSplitOptions.RemoveEmptyEntries);
-                return pars.Select(par => par.Split('=')).ToDictionary(split => split[0], split => split[1]);
+                return HttpUtility.ParseQueryString(txt);
             }
         }
 
@@ -109,9 +107,11 @@ namespace RHttpServer.Request
         /// </summary>
         /// <param name="filePath">The directory to placed to file in</param>
         /// <param name="filerenamer">Function to rename the file(s)</param>
+        /// <param name="maxSizeKb">The max filesize allowed</param>
         /// <returns>Whether the file was saved succesfully</returns>
         public Task<bool> SaveBodyToFile(string filePath, Func<string, string> filerenamer = null, long maxSizeKb = 1000)
         {
+            maxSizeKb = maxSizeKb << 6;
             var tcs = new TaskCompletionSource<bool>();
             if (!UnderlyingRequest.HasEntityBody) return Task.FromResult(false);
             var filestreams = new Dictionary<string, Stream>();
@@ -120,10 +120,11 @@ namespace RHttpServer.Request
             var files = new List<string>();
             parser.FileHandler += async (name, fname, type, disposition, buffer, bytes) =>
             {
-                if ((bytes << 0x400) > maxSizeKb)
+                if (bytes > maxSizeKb)
                 {
                     tcs.TrySetResult(false);
-                };
+                    return;
+                }
                 if (filerenamer != null) fname = filerenamer(fname);
                 Stream stream;
                 if (!filestreams.TryGetValue(name, out stream))
@@ -136,7 +137,6 @@ namespace RHttpServer.Request
                 await stream.WriteAsync(buffer, 0, bytes);
                 await stream.FlushAsync();
                 tcs.TrySetResult(true);
-
             };
             parser.StreamClosedHandler += () =>
             {

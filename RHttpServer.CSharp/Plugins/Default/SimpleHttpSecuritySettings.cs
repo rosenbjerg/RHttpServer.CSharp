@@ -3,7 +3,7 @@
     /// <summary>
     ///     The default security settings
     /// </summary>
-    public sealed class SimpleHttpSecuritySettings : RPlugin, IHttpSecuritySettings
+    public class SimpleHttpSecuritySettings : RPlugin, IHttpSecuritySettings
     {
         /// <summary>
         ///     Default settings for security
