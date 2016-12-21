@@ -86,12 +86,14 @@
     <Compile Include="RHttpAction.cs" />
     <Compile Include="Plugins\Default\SimpleServerProtection.cs" />
     <Compile Include="Plugins\Default\SimpleHttpSecuritySettings.cs" />
-    <Compile Include="HttpServer.cs" />
+    <Compile Include="BaseHttpServer.cs" />
     <Compile Include="Plugins\Default\ServiceStackJsonConverter.cs" />
     <Compile Include="Request\RRequest.cs" />
     <Compile Include="Response\RResponse.cs" />
     <Compile Include="Request\RCookies.cs" />
     <Compile Include="Request\RHeaders.cs" />
+    <Compile Include="TaskBasedHttpServer.cs" />
+    <Compile Include="ThreadBasedHttpServer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

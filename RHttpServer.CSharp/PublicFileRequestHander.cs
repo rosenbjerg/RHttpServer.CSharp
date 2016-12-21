@@ -13,7 +13,7 @@ namespace RHttpServer
             _pdir = publicDir;
             _rPluginCollection = rplugins;
         }
-        
+
         private readonly string _pdir;
         private readonly RPluginCollection _rPluginCollection;
 

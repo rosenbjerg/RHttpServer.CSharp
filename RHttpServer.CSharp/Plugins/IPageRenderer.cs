@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using RHttpServer.Response;
 
 namespace RHttpServer.Plugins
@@ -21,8 +20,9 @@ namespace RHttpServer.Plugins
         /// <returns>Returns the content of the rendered page, ready to be sent as response</returns>
         string Render(string filepath, RenderParams parameters);
 
-        ///// <summary>
         /////     Used by RenderParams internally to add the render-specific symbols to the tags.
+
+        ///// <summary>
         ///// </summary>
         ///// <param name="tag">The tag without any render-specific symbols</param>
         ///// <param name="data">The data that will replace the tag when rendering</param>

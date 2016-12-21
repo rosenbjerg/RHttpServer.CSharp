@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -13,11 +12,14 @@ namespace RHttpServer.Plugins.Default
     /// </summary>
     internal sealed class EcsPageRenderer : RPlugin, IPageRenderer
     {
-        private IFileCacheManager _cacheMan;
-        private IFileCacheManager CacheMan => _cacheMan ?? (_cacheMan = UsePlugin<IFileCacheManager>());
         private static readonly Regex NormalTagRegex = new Regex(@"(?i)<% ?[a-z_][a-z_0-9]* ?%>", RegexOptions.Compiled);
         private static readonly Regex HtmlTagRegex = new Regex(@"(?i)<%= ?[a-z_][a-z_0-9]* ?=%>", RegexOptions.Compiled);
-        private static readonly Regex FileTagRegex = new Regex(@"(?i)<¤ ?([a-z]:|.)?[\\\/\w]+.(html|ecs|js|css|txt) ?¤>", RegexOptions.Compiled);
+
+        private static readonly Regex FileTagRegex = new Regex(
+            @"(?i)<¤ ?([a-z]:|.)?[\\\/\w]+.(html|ecs|js|css|txt) ?¤>", RegexOptions.Compiled);
+
+        private IFileCacheManager _cacheMan;
+        private IFileCacheManager CacheMan => _cacheMan ?? (_cacheMan = UsePlugin<IFileCacheManager>());
 
         private static string InternalRender(StringBuilder pageContent, RenderParams parameters, bool cacheOn,
             IFileCacheManager cache)
@@ -46,7 +48,7 @@ namespace RHttpServer.Plugins.Default
                     doneHashset.Add(pmatch);
                 }
             }
-            
+
 
             var matches = FileTagRegex.Matches(pageContent.ToString());
             foreach (Match match in matches)
@@ -103,14 +105,15 @@ namespace RHttpServer.Plugins.Default
             return sb.ToString();
         }
 
-        ///// <summary>
-        /////     Applies ecs tag scheme to tag to prepare for rendering
-        ///// </summary>
-        ///// <param name="tag"></param>
-        ///// <param name="data"></param>
-        ///// <returns>The </returns>
-        //public KeyValuePair<string, string> Parametrize(string tag, string data)
         //{
+        //public KeyValuePair<string, string> Parametrize(string tag, string data)
+        ///// <returns>The </returns>
+        ///// <param name="data"></param>
+        ///// <param name="tag"></param>
+        ///// </summary>
+        /////     Applies ecs tag scheme to tag to prepare for rendering
+
+        ///// <summary>
         //    return new KeyValuePair<string, string>($"<%{tag.Trim(' ')}%>", data);
         //}
 

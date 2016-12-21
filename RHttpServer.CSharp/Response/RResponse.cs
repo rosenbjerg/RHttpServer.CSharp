@@ -5,7 +5,6 @@ using System.IO.Compression;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using RHttpServer.Logging;
 using RHttpServer.Plugins;
 
 namespace RHttpServer.Response
@@ -18,7 +17,7 @@ namespace RHttpServer.Response
     {
         private const int BufferSize = 0x1000;
         private const string Xpb = "X-Powered-By";
-        private const string XpBstring = "RHttpServer.CSharp/";
+        private const string XpBstring = "RedBaseHttpServer.CSharp/";
 
         internal static readonly IDictionary<string, string> MimeTypes =
             new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
@@ -147,20 +146,21 @@ namespace RHttpServer.Response
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(data);
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = bytes.LongLength;
                 if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                     await InternalTransfer(bytes, UnderlyingResponse.OutputStream);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(bytes, zip);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -172,14 +172,14 @@ namespace RHttpServer.Response
         /// <param name="contentType">The mime type of the content</param>
         /// <param name="gzipCompress">Whether the data should be compressed if client accepts gzip encoding</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendBytes(byte[] data, string contentType = "application/octet-stream", string filename = "", bool gzipCompress = false,
+        public async void SendBytes(byte[] data, string contentType = "application/octet-stream", string filename = "",
+            bool gzipCompress = false,
             int status = (int) HttpStatusCode.OK)
         {
             try
             {
                 UnderlyingResponse.StatusCode = status;
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader("Accept-Ranges", "bytes");
                 UnderlyingResponse.ContentLength64 = data.LongLength;
@@ -189,12 +189,14 @@ namespace RHttpServer.Response
                     await InternalTransfer(data, UnderlyingResponse.OutputStream);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(data, zip);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -214,8 +216,7 @@ namespace RHttpServer.Response
             try
             {
                 UnderlyingResponse.StatusCode = status;
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader("Accept-Ranges", "bytes");
                 var len = data.LongLength;
@@ -230,12 +231,14 @@ namespace RHttpServer.Response
                     await InternalTransfer(data, UnderlyingResponse.OutputStream, start, rangeEnd);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(data, zip, start, rangeEnd);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -255,8 +258,7 @@ namespace RHttpServer.Response
             try
             {
                 UnderlyingResponse.StatusCode = status;
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 if (gzipCompress) UnderlyingResponse.AddHeader("Content-Encoding", "gzip");
                 if (!string.IsNullOrEmpty(filename))
                     UnderlyingResponse.AddHeader("Content-disposition", $"inline; filename=\"{filename}\"");
@@ -266,12 +268,14 @@ namespace RHttpServer.Response
                     await InternalTransfer(stream, UnderlyingResponse.OutputStream);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(stream, zip);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -287,20 +291,21 @@ namespace RHttpServer.Response
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IJsonConverter>().Serialize(data));
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentType = "application/json";
                 UnderlyingResponse.ContentLength64 = bytes.LongLength;
                 if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                     await InternalTransfer(bytes, UnderlyingResponse.OutputStream);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(bytes, zip);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -316,20 +321,21 @@ namespace RHttpServer.Response
             {
                 UnderlyingResponse.StatusCode = status;
                 var bytes = Encoding.UTF8.GetBytes(Plugins.Use<IXmlConverter>().Serialize(data));
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentType = "application/xml";
                 UnderlyingResponse.ContentLength64 = bytes.LongLength;
                 if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                     await InternalTransfer(bytes, UnderlyingResponse.OutputStream);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(bytes, zip);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -337,10 +343,14 @@ namespace RHttpServer.Response
         ///     Sends file as response and requests the data to be displayed in-browser if possible
         /// </summary>
         /// <param name="filepath">The local path of the file to send</param>
-        /// <param name="contentType">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
+        /// <param name="contentType">
+        ///     The mime type for the file, when set to null, the system will try to detect based on file
+        ///     extension
+        /// </param>
         /// <param name="gzipCompress">Whether the data should be compressed if client accepts gzip encoding</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendFile(string filepath, string contentType = null, bool gzipCompress = false, int status = (int) HttpStatusCode.OK)
+        public async void SendFile(string filepath, string contentType = null, bool gzipCompress = false,
+            int status = (int) HttpStatusCode.OK)
         {
             try
             {
@@ -349,9 +359,9 @@ namespace RHttpServer.Response
                     contentType = "application/octet-stream";
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader("Accept-Ranges", "bytes");
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
-                UnderlyingResponse.AddHeader("Content-disposition", "inline; filename=\"" + Path.GetFileName(filepath) + "\"");
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
+                UnderlyingResponse.AddHeader("Content-disposition",
+                    "inline; filename=\"" + Path.GetFileName(filepath) + "\"");
                 using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var len = input.Length;
@@ -359,15 +369,17 @@ namespace RHttpServer.Response
                     if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                         await InternalTransfer(input, UnderlyingResponse.OutputStream);
                     else
-                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true)
+                        )
+                        {
                             await InternalTransfer(input, zip);
-
+                        }
                 }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -377,10 +389,14 @@ namespace RHttpServer.Response
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="rangeStart">The offset in the file</param>
         /// <param name="rangeEnd">The position of the last byte to send, in the file</param>
-        /// <param name="contentType">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
+        /// <param name="contentType">
+        ///     The mime type for the file, when set to null, the system will try to detect based on file
+        ///     extension
+        /// </param>
         /// <param name="gzipCompress">Whether the data should be compressed if client accepts gzip encoding</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendFile(string filepath, long rangeStart, long rangeEnd, string contentType = "", bool gzipCompress = false,
+        public async void SendFile(string filepath, long rangeStart, long rangeEnd, string contentType = "",
+            bool gzipCompress = false,
             int status = (int) HttpStatusCode.PartialContent)
         {
             try
@@ -390,8 +406,7 @@ namespace RHttpServer.Response
                     contentType = "application/octet-stream";
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader("Accept-Ranges", "bytes");
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.AddHeader("Content-disposition",
                     "inline; filename=\"" + Path.GetFileName(filepath) + "\"");
                 using (Stream input = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -402,16 +417,19 @@ namespace RHttpServer.Response
                     UnderlyingResponse.AddHeader("Content-Range", $"bytes {start}-{start + len - 1}/{start + len}");
                     UnderlyingResponse.ContentLength64 = len;
                     if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
-                        await InternalTransfer(input, UnderlyingResponse.OutputStream, rangeStart, (int)len);
+                        await InternalTransfer(input, UnderlyingResponse.OutputStream, rangeStart, (int) len);
                     else
-                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
-                            await InternalTransfer(input, zip, rangeStart, (int)len);
+                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true)
+                        )
+                        {
+                            await InternalTransfer(input, zip, rangeStart, (int) len);
+                        }
                 }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -420,10 +438,14 @@ namespace RHttpServer.Response
         /// </summary>
         /// <param name="filepath">The local path of the file to send</param>
         /// <param name="filename">The name filename the client receives the file with, defaults to using the actual filename</param>
-        /// <param name="contentType">The mime type for the file, when set to null, the system will try to detect based on file extension</param>
+        /// <param name="contentType">
+        ///     The mime type for the file, when set to null, the system will try to detect based on file
+        ///     extension
+        /// </param>
         /// <param name="gzipCompress">Whether the data should be compressed if client accepts gzip encoding</param>
         /// <param name="status">The status code for the response</param>
-        public async void Download(string filepath, string filename = "", string contentType = "", bool gzipCompress = false,
+        public async void Download(string filepath, string filename = "", string contentType = "",
+            bool gzipCompress = false,
             int status = (int) HttpStatusCode.OK)
         {
             try
@@ -432,8 +454,7 @@ namespace RHttpServer.Response
                 if ((contentType == null) && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
                     contentType = "application/octet-stream";
                 UnderlyingResponse.ContentType = contentType;
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.AddHeader("Content-disposition", "attachment; filename=\"" +
                                                                     (string.IsNullOrEmpty(filename)
                                                                         ? Path.GetFileName(filepath)
@@ -445,14 +466,17 @@ namespace RHttpServer.Response
                     if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                         await InternalTransfer(input, UnderlyingResponse.OutputStream);
                     else
-                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true)
+                        )
+                        {
                             await InternalTransfer(input, zip);
+                        }
                 }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -463,26 +487,28 @@ namespace RHttpServer.Response
         /// <param name="parameters">The parameter collection used when replacing data</param>
         /// <param name="gzipCompress">Whether the data should be compressed if client accepts gzip encoding</param>
         /// <param name="status">The status code for the response</param>
-        public async void RenderPage(string pagefilepath, RenderParams parameters, bool gzipCompress = false, int status = (int) HttpStatusCode.OK)
+        public async void RenderPage(string pagefilepath, RenderParams parameters, bool gzipCompress = false,
+            int status = (int) HttpStatusCode.OK)
         {
             try
             {
                 UnderlyingResponse.StatusCode = status;
                 var data = Encoding.UTF8.GetBytes(Plugins.Use<IPageRenderer>().Render(pagefilepath, parameters));
                 UnderlyingResponse.ContentType = "text/html";
-                if (HttpServer.IncludeServerHeader)
-                    UnderlyingResponse.AddHeader(Xpb, XpBstring + HttpServer.Version);
+                UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentLength64 = data.LongLength;
                 if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                     await InternalTransfer(data, UnderlyingResponse.OutputStream);
                 else
                     using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
+                    {
                         await InternalTransfer(data, zip);
+                    }
                 UnderlyingResponse.Close();
             }
             catch (Exception)
             {
-                if (HttpServer.ThrowExceptions) throw;
+                if (BaseHttpServer.ThrowExceptions) throw;
             }
         }
 
@@ -528,7 +554,7 @@ namespace RHttpServer.Response
 
         private static async Task InternalTransfer(byte[] src, Stream dest, long start, long end)
         {
-            await dest.WriteAsync(src, (int)start, (int)end);
+            await dest.WriteAsync(src, (int) start, (int) end);
             await dest.FlushAsync();
             dest.Close();
         }

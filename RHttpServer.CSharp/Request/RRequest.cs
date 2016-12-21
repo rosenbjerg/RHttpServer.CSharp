@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
@@ -22,11 +21,12 @@ namespace RHttpServer.Request
             Params = par;
             _rp = pluginCollection;
         }
-        
+
+        private readonly RPluginCollection _rp;
+
         private RCookies _cookies;
         private RHeaders _headers;
         private RQueries _queries;
-        private readonly RPluginCollection _rp;
 
         /// <summary>
         ///     The query elements of the request

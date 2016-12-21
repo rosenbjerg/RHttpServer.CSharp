@@ -8,9 +8,9 @@ namespace RHttpServer.Tests
     public class RouteTests
     {
         [ClassInitialize]
-        public static void MyClassInitialize(TestContext testContext)
+        public static void RouteTestsInitialize(TestContext testContext)
         {
-            _testServ = new HttpServer(5555, 3, "");
+            _testServ = new TaskBasedHttpServer(5555, "");
 
             _testServ.Get("/url1", (req, res) =>
             {
@@ -51,9 +51,8 @@ namespace RHttpServer.Tests
             _testServ.Stop();
         }
 
-        private static HttpServer _testServ;
-
-
+        private static TaskBasedHttpServer _testServ;
+        
         [TestMethod]
         public void TestDirectRoutes()
         {
@@ -96,6 +95,59 @@ namespace RHttpServer.Tests
 
                 str = wc.DownloadString("http://localhost:5555/param/test2");
                 Assert.AreEqual("test2", str);
+            }
+        }
+    }
+    [TestClass]
+    public class UrlQueryTests
+    {
+        [ClassInitialize]
+        public static void Initialize(TestContext testContext)
+        {
+            _testServ = new TaskBasedHttpServer(5556, "");
+
+            _testServ.Get("/url1", (req, res) =>
+            {
+                var q = req.Queries["q"];
+                res.SendString(q);
+            });
+            
+
+            _testServ.Get("/url2", (req, res) =>
+            {
+                var x = req.Queries["x"];
+                var y = req.Queries["y"];
+                res.SendString(x + "-" +y);
+            });
+            
+            _testServ.Start(true);
+        }
+
+        [ClassCleanup]
+        public static void Cleanup()
+        {
+            _testServ.Stop();
+        }
+
+        private static TaskBasedHttpServer _testServ;
+
+        [TestMethod]
+        public void TestSingleQuery()
+        {
+            using (var wc = new WebClient())
+            {
+                var str = wc.DownloadString("http://localhost:5556/url1?q=url1");
+                Assert.AreEqual("url1", str);
+            }
+        }
+
+        [TestMethod]
+        public void TestTwoQueries()
+        {
+            using (var wc = new WebClient())
+            {
+                var str = wc.DownloadString("http://localhost:5556/url2?x=1&y=2");
+                Assert.AreEqual("1-2", str);
             }
         }
     }

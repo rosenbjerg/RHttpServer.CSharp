@@ -1,13 +1,6 @@
-﻿using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using RHttpServer;
+﻿using RHttpServer;
 using RHttpServer.Logging;
 using RHttpServer.Plugins;
-using RHttpServer.Plugins.Default;
 using RHttpServer.Response;
 
 namespace SimpleRHttpServer
@@ -16,7 +9,7 @@ namespace SimpleRHttpServer
     {
         private static void Main(string[] args)
         {
-            var server = new HttpServer(5000, 4, "public", true);
+            var server = new ThreadBasedHttpServer(5000, 3,  "public", true);
             server.CachePublicFiles = false;
 
             server.Get("/daw", (req, res) => { res.SendString("ok1"); });

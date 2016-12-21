@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -15,10 +14,9 @@ using RHttpServer.Response;
 namespace RHttpServer
 {
     /// <summary>
-    ///     Represents a HTTP server.
-    ///     It should be set up before start
+    /// The base for the http servers
     /// </summary>
-    public sealed class HttpServer : IDisposable
+    public abstract class BaseHttpServer : IDisposable
     {
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
@@ -29,46 +27,29 @@ namespace RHttpServer
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="port">The port that the server should listen on</param>
-        /// <param name="requestHandlerThreads">The amount of threads to handle the incoming requests</param>
         /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
-        public HttpServer(int port, int requestHandlerThreads, string path = "", bool throwExceptions = false)
+        protected BaseHttpServer(int port, string path = "", bool throwExceptions = false)
         {
-            if (requestHandlerThreads < 1)
-            {
-                requestHandlerThreads = 1;
-                Logger.Log("Thread setting", "Minimum 1 request-handler threads");
-            }
             ThrowExceptions = throwExceptions;
             PublicDir = path;
-            _publicFiles = Directory.Exists(path);
+            _publicFiles = !string.IsNullOrWhiteSpace(path) && Directory.Exists(path);
             Port = port;
-            _workers = new Thread[requestHandlerThreads];
-            _queue = new ConcurrentQueue<HttpListenerContext>();
             _stop = new ManualResetEventSlim(false);
-            _ready = new ManualResetEventSlim(false);
             _listener = new HttpListener();
             _listenerThread = new Thread(HandleRequests) {Name = "ListenerThread"};
         }
-        
+
         private readonly HttpListener _listener;
         private readonly Thread _listenerThread;
-        private readonly ConcurrentQueue<HttpListenerContext> _queue;
         private readonly RPluginCollection _rPluginCollection = new RPluginCollection();
         private readonly RouteTreeManager _rtman = new RouteTreeManager();
-        private readonly ManualResetEventSlim _stop, _ready;
-        private readonly Thread[] _workers;
+        protected readonly ManualResetEventSlim _stop;
         private IFileCacheManager _cacheMan;
         private bool _defPluginsReady;
         private bool _publicFiles;
-        
         private ResponseHandler _resHandler;
-        private IHttpSecurityHandler _secMan;
+        protected IHttpSecurityHandler SecMan;
         private bool _securityOn;
-
-        /// <summary>
-        ///     Whether a header containing server info should be included
-        /// </summary>
-        public static bool IncludeServerHeader { get; set; } = true;
 
         /// <summary>
         ///     The publicly available folder
@@ -248,12 +229,8 @@ namespace RHttpServer
                 }
                 _listener.Start();
                 _listenerThread.Start();
+                OnStart();
 
-                for (var i = 0; i < _workers.Length; i++)
-                {
-                    _workers[i] = new Thread(Worker) {Name = $"ReqHandler #{i}"};
-                    _workers[i].Start();
-                }
                 Console.WriteLine("RHttpServer v. {0} started", Version);
                 if (_listener.Prefixes.First() == "localhost")
                     Logger.Log("Server visibility", "Listening on localhost only");
@@ -300,15 +277,15 @@ namespace RHttpServer
 
             if (!_rPluginCollection.IsRegistered<IFileCacheManager>())
                 RegisterPlugin<IFileCacheManager, SimpleFileCacheManager>(new SimpleFileCacheManager());
-            
+
             if (!_rPluginCollection.IsRegistered<IPageRenderer>())
                 RegisterPlugin<IPageRenderer, EcsPageRenderer>(new EcsPageRenderer());
 
             _defPluginsReady = true;
 
             if (securitySettings == null) securitySettings = new SimpleHttpSecuritySettings();
-            _secMan = _rPluginCollection.Use<IHttpSecurityHandler>();
-            _secMan.Settings = securitySettings;
+            SecMan = _rPluginCollection.Use<IHttpSecurityHandler>();
+            SecMan.Settings = securitySettings;
             _rPluginCollection.Use<IPageRenderer>().CachePages = renderCaching;
             _cacheMan = _rPluginCollection.Use<IFileCacheManager>();
             if (CachePublicFiles && _publicFiles)
@@ -325,20 +302,18 @@ namespace RHttpServer
         {
             _stop.Set();
             _listenerThread.Join();
-            foreach (var worker in _workers)
-                worker.Join(100);
             _listener.Stop();
             _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
+            OnStop();
         }
 
         private void HandleRequests()
         {
             while (_listener.IsListening)
-            {
                 try
                 {
                     var context = _listener.BeginGetContext(ContextReady, null);
-                    if (0 == WaitHandle.WaitAny(new[] { _stop.WaitHandle, context.AsyncWaitHandle }))
+                    if (0 == WaitHandle.WaitAny(new[] {_stop.WaitHandle, context.AsyncWaitHandle}))
                         return;
                 }
                 catch (Exception ex)
@@ -346,55 +321,29 @@ namespace RHttpServer
                     if (ThrowExceptions) throw;
                     Logger.Log(ex);
                 }
-            }
         }
 
         private void ContextReady(IAsyncResult ar)
         {
             try
             {
-                _queue.Enqueue(_listener.EndGetContext(ar));
-                _ready.Set();
+                ProcessContext(_listener.EndGetContext(ar));
             }
-            catch (Exception ex)
+            catch
             {
-                if (ThrowExceptions) throw;
-                Logger.Log(ex);
             }
         }
 
-        private void Worker()
-        {
-            WaitHandle[] wait = {_ready.WaitHandle, _stop.WaitHandle};
-            
-            while (0 == WaitHandle.WaitAny(wait))
-            {
-                try
-                {
-                    HttpListenerContext context;
-                    if (!_queue.TryDequeue(out context))
-                    {
-                        _ready.Reset();
-                        continue;
-                    }
-                    if (!SecurityOn || _secMan.HandleRequest(context.Request))
-                        Process(context);
-                }
-                catch (Exception ex)
-                {
-                    if (ThrowExceptions) throw;
-                    Logger.Log(ex);
-                }
-            }
-        }
+        protected abstract void ProcessContext(HttpListenerContext context);
 
-        private void Process(HttpListenerContext context)
+        protected void Process(HttpListenerContext context)
         {
             var route = context.Request.Url.AbsolutePath.Trim('/');
             var hm = GetMethod(context.Request.HttpMethod);
             if (hm == HttpMethod.UNKNOWN)
             {
-                Logger.Log("Unsupported HTTP method", $"{context.Request.HttpMethod} from {context.Request.RemoteEndPoint}");
+                Logger.Log("Unsupported HTTP method",
+                    $"{context.Request.HttpMethod} from {context.Request.RemoteEndPoint}");
                 context.Response.StatusCode = 404;
                 context.Response.Close();
                 return;
@@ -465,6 +414,14 @@ namespace RHttpServer
         public T GetPlugin<T>()
         {
             return _rPluginCollection.Use<T>();
+        }
+
+        protected virtual void OnStart()
+        {
+        }
+
+        protected virtual void OnStop()
+        {
         }
 
         public void Dispose()

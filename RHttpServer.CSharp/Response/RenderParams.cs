@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Web;
 using RHttpServer.Plugins;
 
 namespace RHttpServer.Response

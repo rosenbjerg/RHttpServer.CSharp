@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using RHttpServer.Request;
 using RHttpServer.Response;
 
@@ -26,6 +25,5 @@ namespace RHttpServer
         internal List<KeyValuePair<int, string>> Params { get; } = new List<KeyValuePair<int, string>>();
 
         internal Action<RRequest, RResponse> Action { get; }
-        
     }
 }
