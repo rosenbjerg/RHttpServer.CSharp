@@ -25,17 +25,17 @@ In this example, we listen locally on port 3000 and respond using 4 threads, wit
 This example only handles GET http requests and the public folder is placed in the same folder as the server executable
 
 ```csharp
-var server = new RHttpServer.HttpServer(3000, 4, "./public");
+var server = new RHttpServer.ThreadBasedHttpServer(3000, 4, "./public");
 
 server.Get("/", (req, res) =>
 {
     res.SendString("Welcome");
 });
 
-// Sends the file index.html as response
+// Sends the file secret.html as response
 server.Get("/file", (req, res) =>
 {
-    res.SendFile("./public/index.html");
+    res.SendFile("./notpublic/secret.html");
 });
 
 
