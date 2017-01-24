@@ -1,106 +1,65 @@
 using System;
+using System.Collections.Generic;
 
 namespace RHttpServer
 {
     internal sealed class RouteTreeManager
     {
-        private readonly RouteTree _deleteTree = new RouteTree("", null);
-        private readonly RouteTree _getTree = new RouteTree("", null);
-        private readonly RouteTree _headTree = new RouteTree("", null);
-        private readonly RouteTree _optionsTree = new RouteTree("", null);
-        private readonly RouteTree _postTree = new RouteTree("", null);
-        private readonly RouteTree _putTree = new RouteTree("", null);
+        private readonly Dictionary<HttpMethod, RouteTree> _trees = new Dictionary<HttpMethod, RouteTree>();
 
-
-        internal bool AddRoute(RHttpAction action, HttpMethod method)
+        internal void AddRoute(RHttpAction action, HttpMethod method)
         {
-            switch (method)
+            RouteTree rt;
+            if (!_trees.TryGetValue(method, out rt))
             {
-                case HttpMethod.GET:
-                    AddToTree(_getTree, action);
-                    break;
-                case HttpMethod.POST:
-                    AddToTree(_postTree, action);
-                    break;
-                case HttpMethod.PUT:
-                    AddToTree(_putTree, action);
-                    break;
-                case HttpMethod.DELETE:
-                    AddToTree(_deleteTree, action);
-                    break;
-                case HttpMethod.HEAD:
-                    AddToTree(_headTree, action);
-                    break;
-                case HttpMethod.OPTIONS:
-                    AddToTree(_optionsTree, action);
-                    break;
+                rt = new RouteTree("", null);
+                _trees.Add(method, rt);
             }
-            return false;
+            AddToTree(rt, action);
         }
 
-        private void AddToTree(RouteTree tree, RHttpAction action)
+        private static void AddToTree(RouteTree tree, RHttpAction action)
         {
             var rTree = action.RouteTree;
             var len = rTree.Length;
             for (var i = 0; i < len; i++)
             {
-                var ntree = tree.AddBranch(rTree[i]);
+                var ntree = tree.
+                    AddBranch(rTree[i]);
                 tree = ntree;
             }
             if (tree.Action != null) throw new RHttpServerException("Cannot add two actions to the same route");
             tree.Action = action;
         }
 
-        internal RHttpAction SearchInTree(string route, HttpMethod meth, out bool generalFallback)
+        internal RHttpAction SearchInTree(string route, HttpMethod meth, out bool atmostGeneral)
         {
-            RouteTree tree = null, branch = null;
-            switch (meth)
+            RouteTree tree;
+            if (!_trees.TryGetValue(meth, out tree))
             {
-                case HttpMethod.GET:
-                    tree = _getTree;
-                    break;
-                case HttpMethod.POST:
-                    tree = _postTree;
-                    break;
-                case HttpMethod.PUT:
-                    tree = _putTree;
-                    break;
-                case HttpMethod.DELETE:
-                    tree = _deleteTree;
-                    break;
-                case HttpMethod.HEAD:
-                    tree = _headTree;
-                    break;
-                case HttpMethod.OPTIONS:
-                    tree = _optionsTree;
-                    break;
+                atmostGeneral = true;
+                return null;
             }
 
             var split = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
-            var len = split.Length;
-            for (var i = 0; i < len; i++)
+            foreach (var s in split)
             {
-                branch = tree.GetBranch(split[i]);
-                if (branch != null) tree = branch;
-                else break;
-            }
-            if (((branch == null) || (tree.Action == null)) && (len != 0))
-            {
-                while ((branch == null) || (branch.Route != "*") || (tree.Action == null))
+                var branch = tree.GetBranch(s);
+                if (branch != null)
                 {
-                    branch = tree;
-                    if (branch?.Stem == null) break;
-                    tree = branch.Stem;
+                    tree = branch;
+                    continue;
                 }
-                generalFallback = true;
-                return tree?.General?.Action;
+                branch = tree;
+                while (branch.Route != "*")
+                {
+                    if (branch.Stem == null) break;
+                    branch = branch.Stem;
+                }
+                atmostGeneral = true;
+                return branch.Route == "*" ? branch.Action : null;
             }
-            if ((tree?.Action == null) && (tree?.General != null))
-            {
-                generalFallback = true;
-                return tree.General.Action;
-            }
-            generalFallback = tree.Route == "*";
+            atmostGeneral = tree.Route == "*";
             return tree.Action;
         }
     }

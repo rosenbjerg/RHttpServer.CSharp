@@ -1,8 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using RHttpServer.Plugins;
 
-namespace RHttpServer.Response
+namespace RHttpServer
 {
     /// <summary>
     ///     Parameters used when rendering a page
@@ -10,7 +9,6 @@ namespace RHttpServer.Response
     public sealed class RenderParams : IEnumerable<KeyValuePair<string, string>>
     {
         internal static IJsonConverter Converter;
-
 
         private readonly IDictionary<string, string> _dict = new Dictionary<string, string>();
 

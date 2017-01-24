@@ -1,7 +1,7 @@
 using System.Collections.Specialized;
 using System.Linq;
 
-namespace RHttpServer.Request
+namespace RHttpServer
 {
     /// <summary>
     ///     Ease-of-use wrapper for request queries
@@ -12,6 +12,10 @@ namespace RHttpServer.Request
         {
             _qString = queryString;
             _len = queryString.AllKeys.Length;
+        }
+
+        internal RQueries()
+        {
         }
 
         private readonly int _len;

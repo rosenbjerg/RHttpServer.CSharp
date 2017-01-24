@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 
-namespace RHttpServer.Request
+namespace RHttpServer
 {
     /// <summary>
     ///     Ease-of-use wrapper for request headers
@@ -12,6 +12,10 @@ namespace RHttpServer.Request
         internal RHeaders(NameValueCollection headers)
         {
             _headers = headers;
+        }
+
+        internal RHeaders()
+        {
         }
 
         private readonly NameValueCollection _headers;

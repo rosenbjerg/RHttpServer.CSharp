@@ -8,6 +8,7 @@ namespace RHttpServer
         DELETE,
         HEAD,
         OPTIONS,
-        UNKNOWN
+        UNSUPPORTED,
+        WEBSOCKET
     }
 }

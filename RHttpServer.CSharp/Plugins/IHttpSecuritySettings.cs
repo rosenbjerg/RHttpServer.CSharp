@@ -1,4 +1,4 @@
-namespace RHttpServer.Plugins
+namespace RHttpServer
 {
     /// <summary>
     ///     The minimum interface that must be implented in a class for it to be used as security settings

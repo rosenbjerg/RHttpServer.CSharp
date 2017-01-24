@@ -1,23 +1,19 @@
 ﻿using System.IO;
 using System.Linq;
 using System.Net;
-using RHttpServer.Plugins;
-using RHttpServer.Response;
 
 namespace RHttpServer
 {
     internal sealed class CachePublicFileRequestHander : ResponseHandler
     {
-        public CachePublicFileRequestHander(string publicDir, IFileCacheManager cache, RPluginCollection rplugins)
+        public CachePublicFileRequestHander(string publicDir, IFileCacheManager cache)
         {
             _pdir = publicDir;
             _cacheMan = cache;
-            _rPluginCollection = rplugins;
         }
 
         private readonly IFileCacheManager _cacheMan;
         private readonly string _pdir;
-        private readonly RPluginCollection _rPluginCollection;
 
         public override bool Handle(string route, HttpListenerContext context)
         {
@@ -31,51 +27,50 @@ namespace RHttpServer
                 rangeSet = true;
             }
 
-
             var publicFile = Path.Combine(_pdir, route);
+            // Verify that the file is indeed supposed to be public
+            if (!Path.GetFullPath(publicFile).Contains(_pdir))
+                return false;
 
             byte[] temp = null;
             if (_cacheMan.TryGetFile(publicFile, out temp))
             {
                 if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, rangeStart, rangeEnd,
+                    new RResponse(context.Response).SendBytes(temp, rangeStart, rangeEnd,
                         GetType(publicFile), publicFile);
                 else
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, GetType(publicFile), publicFile);
+                    new RResponse(context.Response).SendBytes(temp, GetType(publicFile), publicFile);
                 return true;
             }
 
             if (File.Exists(publicFile))
             {
                 if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
+                    new RResponse(context.Response).SendFile(publicFile, rangeStart, rangeEnd);
                 else
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
+                    new RResponse(context.Response).SendFile(publicFile);
                 _cacheMan.TryAddFile(publicFile);
                 return true;
             }
 
-            var pfiles = _indexFiles.Select(x => Path.Combine(publicFile, x)).ToList();
+            var pfiles = IndexFiles.Select(x => Path.Combine(publicFile, x)).ToList();
             if (
                 !string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(iFile => _cacheMan.TryGetFile(iFile, out temp))))
             {
                 if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, rangeStart, rangeEnd,
+                    new RResponse(context.Response).SendBytes(temp, rangeStart, rangeEnd,
                         GetType(publicFile), publicFile);
                 else
-                    new RResponse(context.Response, _rPluginCollection).SendBytes(temp, GetType(publicFile), publicFile);
+                    new RResponse(context.Response).SendBytes(temp, GetType(publicFile), publicFile);
                 return true;
             }
-            if (!string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(File.Exists)))
-            {
-                if (rangeSet)
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile, rangeStart, rangeEnd);
-                else
-                    new RResponse(context.Response, _rPluginCollection).SendFile(publicFile);
-                _cacheMan.TryAddFile(publicFile);
-                return true;
-            }
-            return false;
+            if (string.IsNullOrEmpty(publicFile = pfiles.FirstOrDefault(File.Exists))) return false;
+            if (rangeSet)
+                new RResponse(context.Response).SendFile(publicFile, rangeStart, rangeEnd);
+            else
+                new RResponse(context.Response).SendFile(publicFile);
+            _cacheMan.TryAddFile(publicFile);
+            return true;
         }
     }
 }

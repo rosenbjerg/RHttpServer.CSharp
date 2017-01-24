@@ -1,23 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Threading;
+using RHttpServer.Default;
 using RHttpServer.Logging;
-using RHttpServer.Plugins;
-using RHttpServer.Plugins.Default;
-using RHttpServer.Request;
-using RHttpServer.Response;
 
 namespace RHttpServer
 {
     /// <summary>
-    /// The base for the http servers
+    ///     The base for the http servers
     /// </summary>
     public abstract class BaseHttpServer : IDisposable
     {
+        private static readonly RequestParams EmptyReqParams = new RequestParams(new Dictionary<string, string>());
         internal static string Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         internal static bool ThrowExceptions;
 
@@ -27,29 +26,29 @@ namespace RHttpServer
         /// </summary>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="port">The port that the server should listen on</param>
-        /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
-        protected BaseHttpServer(int port, string path = "", bool throwExceptions = false)
+        /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown (for debugging)</param>
+        protected BaseHttpServer(int port, string path, bool throwExceptions)
         {
             ThrowExceptions = throwExceptions;
             PublicDir = path;
             _publicFiles = !string.IsNullOrWhiteSpace(path) && Directory.Exists(path);
             Port = port;
-            _stop = new ManualResetEventSlim(false);
+            StopEvent = new ManualResetEventSlim(false);
             _listener = new HttpListener();
             _listenerThread = new Thread(HandleRequests) {Name = "ListenerThread"};
         }
 
         private readonly HttpListener _listener;
         private readonly Thread _listenerThread;
+        private readonly bool _publicFiles;
         private readonly RPluginCollection _rPluginCollection = new RPluginCollection();
         private readonly RouteTreeManager _rtman = new RouteTreeManager();
-        protected readonly ManualResetEventSlim _stop;
+        protected readonly ManualResetEventSlim StopEvent;
         private IFileCacheManager _cacheMan;
         private bool _defPluginsReady;
-        private bool _publicFiles;
         private ResponseHandler _resHandler;
-        protected IHttpSecurityHandler SecMan;
         private bool _securityOn;
+        protected IHttpSecurityHandler SecMan;
 
         /// <summary>
         ///     The publicly available folder
@@ -190,7 +189,19 @@ namespace RHttpServer
             => _rtman.AddRoute(new RHttpAction(route, action), HttpMethod.OPTIONS);
 
         /// <summary>
-        ///     Starts the server, and all request handling threads
+        ///     Add action to handle WEBSOCKET requests to a given route. <para/>
+        ///     Please beware that this relies on HttpListenerWebSocketContext, which is not implemented in Mono
+        /// </summary>
+        /// <param name="route">The route to respond to</param>
+        /// <param name="action">The action that wil respond to the requestsud</param>
+        /// <param name="protocol"></param>
+        public void WebSocket(string route, Action<RRequest, WebSocketDialog> action, string protocol = null)
+        {
+            _rtman.AddRoute(new RHttpAction(route, action, protocol), HttpMethod.WEBSOCKET);
+        }
+
+        /// <summary>
+        ///     Starts the server
         ///     <para />
         /// </summary>
         /// <param name="localOnly">Whether to only listn locally</param>
@@ -215,17 +226,17 @@ namespace RHttpServer
         {
             try
             {
+                if (!listeningPrefixes.Any())
+                {
+                    Console.WriteLine(
+                        "You must listen for either http or https (or both) requests for the server to do anything");
+                    return;
+                }
                 InitializeDefaultPlugins();
                 foreach (var listeningPrefix in listeningPrefixes)
                 {
                     if (HttpEnabled) _listener.Prefixes.Add($"http://{listeningPrefix}:{Port}/");
                     if (HttpsEnabled) _listener.Prefixes.Add($"https://{listeningPrefix}:{HttpsPort}/");
-                }
-                if (_listener.Prefixes.Count == 0)
-                {
-                    Console.WriteLine(
-                        "You must listen for either http or https (or both) requests for the server to do anything");
-                    return;
                 }
                 _listener.Start();
                 _listenerThread.Start();
@@ -235,7 +246,6 @@ namespace RHttpServer
                 if (_listener.Prefixes.First() == "localhost")
                     Logger.Log("Server visibility", "Listening on localhost only");
                 RenderParams.Converter = _rPluginCollection.Use<IJsonConverter>();
-                _publicFiles = !string.IsNullOrWhiteSpace(PublicDir);
             }
             catch (SocketException)
             {
@@ -289,9 +299,11 @@ namespace RHttpServer
             _rPluginCollection.Use<IPageRenderer>().CachePages = renderCaching;
             _cacheMan = _rPluginCollection.Use<IFileCacheManager>();
             if (CachePublicFiles && _publicFiles)
-                _resHandler = new CachePublicFileRequestHander(PublicDir, _cacheMan, _rPluginCollection);
+                _resHandler = new CachePublicFileRequestHander(PublicDir, _cacheMan);
             else if (_publicFiles)
-                _resHandler = new PublicFileRequestHander(PublicDir, _rPluginCollection);
+                _resHandler = new PublicFileRequestHander(PublicDir);
+            else
+                _resHandler = new ActionOnlyResponseHandler();
             SecurityOn = securityOn;
         }
 
@@ -300,7 +312,7 @@ namespace RHttpServer
         /// </summary>
         public void Stop()
         {
-            _stop.Set();
+            StopEvent.Set();
             _listenerThread.Join();
             _listener.Stop();
             _rPluginCollection.Use<IHttpSecurityHandler>().Stop();
@@ -313,7 +325,7 @@ namespace RHttpServer
                 try
                 {
                     var context = _listener.BeginGetContext(ContextReady, null);
-                    if (0 == WaitHandle.WaitAny(new[] {_stop.WaitHandle, context.AsyncWaitHandle}))
+                    if (0 == WaitHandle.WaitAny(new[] {StopEvent.WaitHandle, context.AsyncWaitHandle}))
                         return;
                 }
                 catch (Exception ex)
@@ -331,6 +343,7 @@ namespace RHttpServer
             }
             catch
             {
+                if (ThrowExceptions) throw;
             }
         }
 
@@ -340,7 +353,7 @@ namespace RHttpServer
         {
             var route = context.Request.Url.AbsolutePath.Trim('/');
             var hm = GetMethod(context.Request.HttpMethod);
-            if (hm == HttpMethod.UNKNOWN)
+            if (hm == HttpMethod.UNSUPPORTED)
             {
                 Logger.Log("Unsupported HTTP method",
                     $"{context.Request.HttpMethod} from {context.Request.RemoteEndPoint}");
@@ -349,23 +362,38 @@ namespace RHttpServer
                 return;
             }
 
+            if (context.Request.IsWebSocketRequest)
+            {
+                bool gf;
+                var wsact = _rtman.SearchInTree(route, HttpMethod.WEBSOCKET, out gf);
+                if (wsact != null)
+                {
+                    PerformWSAction(context, GetParams(wsact, route), _rPluginCollection, wsact);
+                    return;
+                }
+            }
+
             bool generalFallback;
             var act = _rtman.SearchInTree(route, hm, out generalFallback);
-            if (((act == null) || generalFallback) && _publicFiles && _resHandler.Handle(route, context))
-                return;
 
+            if (generalFallback && _resHandler.Handle(route, context))
+                return;
             if (act != null)
             {
-                RRequest req;
-                RResponse res;
-                GetReqRes(context, GetParams(act, route), _rPluginCollection, out req, out res);
-                act.Action(req, res);
+                PerformAction(context, GetParams(act, route), _rPluginCollection, act);
             }
             else
             {
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }
+        }
+
+        private static async void PerformWSAction(HttpListenerContext context, RequestParams reqPar,
+            RPluginCollection plugins, RHttpAction wsact)
+        {
+            var wsc = await context.AcceptWebSocketAsync(wsact.WSProtocol);
+            wsact.WSAction(new RRequest(context.Request, reqPar, plugins), new WebSocketDialog(wsc));
         }
 
         private static HttpMethod GetMethod(string input)
@@ -385,24 +413,26 @@ namespace RHttpServer
                 case "HEAD":
                     return HttpMethod.HEAD;
                 default:
-                    return HttpMethod.UNKNOWN;
+                    return HttpMethod.UNSUPPORTED;
             }
         }
 
-        private static void GetReqRes(HttpListenerContext context, RequestParams reqPar, RPluginCollection plugins,
-            out RRequest req, out RResponse res)
+        private static void PerformAction(HttpListenerContext context, RequestParams reqPar, RPluginCollection plugins,
+            RHttpAction act)
         {
-            req = new RRequest(context.Request, reqPar, plugins);
-            res = new RResponse(context.Response, plugins);
+            var req = new RRequest(context.Request, reqPar, plugins);
+            var res = new RResponse(context.Response, plugins);
+            act.Action(req, res);
         }
+
 
         private static RequestParams GetParams(RHttpAction act, string route)
         {
-            var rTree = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
-            var rLen = rTree.Length;
+            if (!act.Params.Any()) return EmptyReqParams;
+            var rt = route.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
             var dict = act.Params
-                .Where(kvp => kvp.Key < rLen)
-                .ToDictionary(kvp => kvp.Value, kvp => rTree[kvp.Key]);
+                .Where(kvp => kvp.Key < rt.Length)
+                .ToDictionary(kvp => kvp.Value, kvp => rt[kvp.Key]);
             return new RequestParams(dict);
         }
 

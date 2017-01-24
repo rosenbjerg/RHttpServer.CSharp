@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using RHttpServer.Plugins;
 
-namespace RHttpServer.Response
+namespace RHttpServer
 {
     /// <summary>
     ///     Class representing the reponse to a clients request
@@ -17,7 +17,7 @@ namespace RHttpServer.Response
     {
         private const int BufferSize = 0x1000;
         private const string Xpb = "X-Powered-By";
-        private const string XpBstring = "RedBaseHttpServer.CSharp/";
+        private const string XpBstring = "RedHttpServer.CSharp/";
 
         internal static readonly IDictionary<string, string> MimeTypes =
             new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase)
@@ -98,6 +98,16 @@ namespace RHttpServer.Response
             UnderlyingResponse = res;
             Plugins = rPluginCollection;
         }
+
+        internal RResponse(HttpListenerResponse res)
+        {
+            UnderlyingResponse = res;
+        }
+
+        internal RResponse()
+        {
+        }
+
 
         /// <summary>
         ///     The plugins registered to the server
@@ -225,7 +235,7 @@ namespace RHttpServer.Response
                 if (!string.IsNullOrEmpty(filename))
                     UnderlyingResponse.AddHeader("Content-disposition", $"inline; filename=\"{filename}\"");
                 UnderlyingResponse.AddHeader("Content-Range", $"bytes {start}-{start + len - 1}/{start + len}");
-                if ((rangeEnd == -1) || (rangeEnd > len))
+                if (rangeEnd == -1 || rangeEnd > len)
                     rangeEnd = len;
                 if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                     await InternalTransfer(data, UnderlyingResponse.OutputStream, start, rangeEnd);
@@ -355,7 +365,7 @@ namespace RHttpServer.Response
             try
             {
                 UnderlyingResponse.StatusCode = status;
-                if ((contentType == null) && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
+                if (contentType == null && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
                     contentType = "application/octet-stream";
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader("Accept-Ranges", "bytes");
@@ -402,7 +412,7 @@ namespace RHttpServer.Response
             try
             {
                 UnderlyingResponse.StatusCode = status;
-                if ((contentType == null) && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
+                if (contentType == null && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
                     contentType = "application/octet-stream";
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader("Accept-Ranges", "bytes");
@@ -451,7 +461,7 @@ namespace RHttpServer.Response
             try
             {
                 UnderlyingResponse.StatusCode = status;
-                if ((contentType == null) && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
+                if (contentType == null && !MimeTypes.TryGetValue(Path.GetExtension(filepath), out contentType))
                     contentType = "application/octet-stream";
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
@@ -512,7 +522,7 @@ namespace RHttpServer.Response
             }
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static async Task InternalTransfer(Stream src, Stream dest)
         {
             var buffer = new byte[BufferSize];
@@ -547,11 +557,15 @@ namespace RHttpServer.Response
             dest.Close();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static async Task InternalTransfer(byte[] src, Stream dest)
         {
-            await InternalTransfer(src, dest, 0, src.LongLength);
+            await dest.WriteAsync(src, 0, src.Length);
+            await dest.FlushAsync();
+            dest.Close();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static async Task InternalTransfer(byte[] src, Stream dest, long start, long end)
         {
             await dest.WriteAsync(src, (int) start, (int) end);
@@ -559,12 +573,14 @@ namespace RHttpServer.Response
             dest.Close();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long CalcStart(long len, long start, long end)
         {
             if (start != -1) return start;
             return len - end;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static long CalcLength(long len, long start, long end)
         {
             if (end == -1)

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Threading.Tasks;
 
-namespace RHttpServer.Plugins
+namespace RHttpServer
 {
     /// <summary>
     ///     Interface for classes used to parse the request body data stream

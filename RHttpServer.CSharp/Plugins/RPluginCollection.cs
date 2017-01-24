@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Concurrent;
 
-namespace RHttpServer.Plugins
+namespace RHttpServer
 {
     /// <summary>
     ///     A collection of RPlugins
     /// </summary>
-    public class RPluginCollection
+    public sealed class RPluginCollection
     {
+        internal RPluginCollection()
+        {
+        }
+
         private readonly ConcurrentDictionary<Type, object> _plugins = new ConcurrentDictionary<Type, object>();
 
         internal void Add(Type pluginInterface, object plugin)

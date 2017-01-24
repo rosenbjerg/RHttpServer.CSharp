@@ -21,9 +21,10 @@ namespace RHttpServer
 
         internal RouteTree GetBranch(string route)
         {
-            RouteTree rt = null;
-            Specific.TryGetValue(route, out rt);
-            return rt ?? (Parameter ?? General);
+            RouteTree rt;
+            return Specific.TryGetValue(route, out rt)
+                ? rt
+                : (Parameter ?? General);
         }
 
         internal RouteTree AddBranch(string route)
@@ -35,12 +36,10 @@ namespace RHttpServer
                 case "^":
                     return Parameter ?? (Parameter = new RouteTree(route, this));
                 default:
-                    RouteTree nr = null;
-                    if (!Specific.TryGetValue(route, out nr))
-                    {
-                        nr = new RouteTree(route, this);
-                        Specific.Add(route, nr);
-                    }
+                    RouteTree nr;
+                    if (Specific.TryGetValue(route, out nr)) return nr;
+                    nr = new RouteTree(route, this);
+                    Specific.Add(route, nr);
                     return nr;
             }
         }

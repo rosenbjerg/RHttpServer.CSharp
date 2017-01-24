@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.4.1</version>
+    <version>1.0.4.3</version>
     <title>RHS - RedHttpServer</title>
     <authors>Malte Rosenbjerg</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -13,18 +13,19 @@
 RedHttpServer is a simple server framework for creating powerful http(s) servers for websites with dynamic and static content, or APIs, in a very simple manner
 	</description>
 	<summary>
-RedHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with express.
+RedHttpServer is made to be simple to use while being efficient, and is inspired by some of the use patterns of nodejs with expressjs.
+Websockets are now supported, but be aware that HttpListenerWebSocketContext, which is used, isn't implemented in Mono.
 The framework includes plugins for json and xml serialization/deserialization, request body parsing and file caching for improved performance.
 Furthermore a simple plugin for dynamic page rendering, which offers the ability to embed dynamically created content in the html file, even js objects and text, ecs or html files (and a couple more).
-The framework also includes a simple security plugin which offers some protection against simple DOS attacks.
 See project page for more information.
 	</summary>
-    <releaseNotes>Bugfixes</releaseNotes>
+    <releaseNotes>Websockets</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>RHttpServer red rhs http server api rendering ecs</tags>
   <dependencies>
   <group targetFramework="net452">
-		<dependency id="ServiceStack.Text" version="4.5.0" />
+		<dependency id="HttpMultipartParser" version="2.2.3" />
+		<dependency id="ServiceStack.Text" version="4.5.4" />
 	</group>
 </dependencies>
   </metadata>
@@ -39,5 +40,6 @@ See project page for more information.
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\MonoAndroid10" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.dll" target="lib\MonoTouch10" />
     <file src="..\RHttpServer.CSharp\bin\Release\RHttpServer.xml" target="lib\MonoTouch10" />
+	
   </files>
 </package>

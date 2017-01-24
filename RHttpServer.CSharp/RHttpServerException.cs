@@ -7,5 +7,9 @@ namespace RHttpServer
         internal RHttpServerException(string msg) : base(msg)
         {
         }
+
+        internal RHttpServerException()
+        {
+        }
     }
 }

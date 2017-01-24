@@ -5,10 +5,9 @@ using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
-using RHttpServer.Plugins;
-using RHttpServer.Request.MultiPartFormParsing;
+using HttpMultipartParser;
 
-namespace RHttpServer.Request
+namespace RHttpServer
 {
     /// <summary>
     ///     Class representing a request from a client
@@ -20,28 +19,38 @@ namespace RHttpServer.Request
             UnderlyingRequest = req;
             Params = par;
             _rp = pluginCollection;
+            _cookies = new Lazy<RCookies>(() => new RCookies(UnderlyingRequest.Cookies));
+            _headers = new Lazy<RHeaders>(() => new RHeaders(UnderlyingRequest.Headers));
+            _queries = new Lazy<RQueries>(() => new RQueries(UnderlyingRequest.QueryString));
         }
+
+        internal RRequest()
+        {
+        }
+
+        private readonly Lazy<RCookies> _cookies;
+        private readonly NameValueCollection _emptyNameValueCollection = new NameValueCollection();
+        private readonly Lazy<RHeaders> _headers;
+        private readonly Lazy<RQueries> _queries;
 
         private readonly RPluginCollection _rp;
 
-        private RCookies _cookies;
-        private RHeaders _headers;
-        private RQueries _queries;
+        private NameValueCollection _postFormData;
 
         /// <summary>
         ///     The query elements of the request
         /// </summary>
-        public RQueries Queries => _queries ?? (_queries = new RQueries(UnderlyingRequest.QueryString));
+        public RQueries Queries => _queries.Value;
 
         /// <summary>
         ///     The headers contained in the request
         /// </summary>
-        public RHeaders Headers => _headers ?? (_headers = new RHeaders(UnderlyingRequest.Headers));
+        public RHeaders Headers => _headers.Value;
 
         /// <summary>
         ///     The cookies contained in the request
         /// </summary>
-        public RCookies Cookies => _cookies ?? (_cookies = new RCookies(UnderlyingRequest.Cookies));
+        public RCookies Cookies => _cookies.Value;
 
         /// <summary>
         ///     The url parameters of the request
@@ -63,7 +72,7 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public Stream GetBodyStream()
         {
-            if (UnderlyingRequest.HasEntityBody || (UnderlyingRequest.InputStream == Stream.Null)) return null;
+            if (!UnderlyingRequest.HasEntityBody || UnderlyingRequest.InputStream == Stream.Null) return null;
             return UnderlyingRequest.InputStream;
         }
 
@@ -93,12 +102,17 @@ namespace RHttpServer.Request
         /// <returns></returns>
         public NameValueCollection GetBodyPostFormData()
         {
+            if (_postFormData != null) return _postFormData;
             if (!UnderlyingRequest.ContentType.Contains("x-www-form-urlencoded"))
-                return new NameValueCollection();
+            {
+                _postFormData = _emptyNameValueCollection;
+                return _emptyNameValueCollection;
+            }
             using (var reader = new StreamReader(UnderlyingRequest.InputStream))
             {
                 var txt = reader.ReadToEnd();
-                return HttpUtility.ParseQueryString(txt);
+                _postFormData = HttpUtility.ParseQueryString(txt);
+                return _postFormData;
             }
         }
 
@@ -109,48 +123,64 @@ namespace RHttpServer.Request
         /// <param name="filerenamer">Function to rename the file(s)</param>
         /// <param name="maxSizeKb">The max filesize allowed</param>
         /// <returns>Whether the file was saved succesfully</returns>
-        public Task<bool> SaveBodyToFile(string filePath, Func<string, string> filerenamer = null, long maxSizeKb = 1000)
+        public Task<bool> SaveBodyToFile(string filePath, Func<string, string> filerenamer = null, long maxSizeKb = 1024)
         {
-            maxSizeKb = maxSizeKb << 6;
-            var tcs = new TaskCompletionSource<bool>();
             if (!UnderlyingRequest.HasEntityBody) return Task.FromResult(false);
+            var maxbytes = maxSizeKb << 10;
+            var tcs = new TaskCompletionSource<bool>();
             var filestreams = new Dictionary<string, Stream>();
+            var files = new Dictionary<string, string>();
+            var sizes = new Dictionary<string, long>();
+            var failed = false;
 
             var parser = new StreamingMultipartFormDataParser(UnderlyingRequest.InputStream);
-            var files = new List<string>();
-            parser.FileHandler += async (name, fname, type, disposition, buffer, bytes) =>
+            parser.FileHandler += (name, fname, type, disposition, buffer, bytes) =>
             {
-                if (bytes > maxSizeKb)
+                if (failed)
+                    return;
+                if (bytes > maxbytes)
                 {
                     tcs.TrySetResult(false);
                     return;
                 }
-                if (filerenamer != null) fname = filerenamer(fname);
-                Stream stream;
-                if (!filestreams.TryGetValue(name, out stream))
+                if (filerenamer != null)
                 {
-                    var fullFilePath = Path.Combine(filePath, fname);
-                    stream = File.Create(fullFilePath);
-                    filestreams.Add(name, stream);
-                    files.Add(name);
+                    string rename;
+                    if (!files.TryGetValue(fname, out rename))
+                    {
+                        rename = filerenamer(fname);
+                        files.Add(fname, rename);
+                    }
+                    fname = rename;
                 }
-                await stream.WriteAsync(buffer, 0, bytes);
-                await stream.FlushAsync();
-                tcs.TrySetResult(true);
+                if (!sizes.ContainsKey(fname))
+                    sizes[fname] = bytes;
+                else
+                    sizes[fname] += bytes;
+                if (sizes[fname] > maxbytes)
+                {
+                    failed = true;
+                    foreach (var str in filestreams.Values)
+                        str.Close();
+                    tcs.TrySetResult(false);
+                    return;
+                }
+                Stream stream;
+                if (!filestreams.TryGetValue(fname, out stream))
+                {
+                    stream = File.Create(Path.Combine(filePath, fname));
+                    filestreams.Add(fname, stream);
+                }
+                stream.Write(buffer, 0, bytes);
+                stream.Flush();
             };
             parser.StreamClosedHandler += () =>
             {
-                foreach (var file in files)
-                    filestreams[file].Close();
+                foreach (var stream in filestreams.Values)
+                    stream.Close();
+                tcs.TrySetResult(true);
             };
-            try
-            {
-                parser.Run();
-            }
-            catch (MultipartParseException ex)
-            {
-                tcs.TrySetException(ex);
-            }
+            parser.Run();
             return tcs.Task;
         }
     }

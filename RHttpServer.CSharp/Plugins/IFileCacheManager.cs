@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Plugins
+namespace RHttpServer
 {
     /// <summary>
     ///     Interface for classes used for Json serialization and deserialization
@@ -12,6 +12,11 @@ namespace RHttpServer.Plugins
         ///     All extension must be lowercase
         /// </summary>
         HashSet<string> CacheAllowedFileExtension { get; }
+
+        /// <summary>
+        ///     The current size of the cache in bytes
+        /// </summary>
+        long Size { get; }
 
         /// <summary>
         ///     Method to call when it is needed to empty the page cache.

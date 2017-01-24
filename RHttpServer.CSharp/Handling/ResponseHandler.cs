@@ -1,19 +1,16 @@
 ﻿using System.IO;
 using System.Net;
-using RHttpServer.Response;
 
 namespace RHttpServer
 {
     internal abstract class ResponseHandler
     {
-        protected static readonly string[] _indexFiles =
+        protected static readonly string[] IndexFiles =
         {
             "index.html",
             "index.htm",
-            "index.php",
             "default.html",
             "default.htm",
-            "default.php"
         };
 
         public abstract bool Handle(string route, HttpListenerContext context);

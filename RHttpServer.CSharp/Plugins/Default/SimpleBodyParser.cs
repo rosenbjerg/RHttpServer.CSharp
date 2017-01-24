@@ -4,7 +4,7 @@ using System.Net;
 using System.Threading.Tasks;
 using RHttpServer.Logging;
 
-namespace RHttpServer.Plugins.Default
+namespace RHttpServer.Default
 {
     /// <summary>
     ///     Simple body parser that can be used to parse JSON objects and C# primitives, or just return the input stream
@@ -26,7 +26,7 @@ namespace RHttpServer.Plugins.Default
             if (t == _stream) return (T) (object) underlyingRequest.InputStream;
             using (var stream = underlyingRequest.InputStream)
             {
-                if (t.IsPrimitive || (t == _string))
+                if (t.IsPrimitive || t == _string)
                     using (var reader = new StreamReader(stream, underlyingRequest.ContentEncoding))
                     {
                         if (t == _int)
@@ -96,7 +96,7 @@ namespace RHttpServer.Plugins.Default
             if (t == _stream) return (T) (object) underlyingRequest.InputStream;
             using (var stream = underlyingRequest.InputStream)
             {
-                if (t.IsPrimitive || (t == _string))
+                if (t.IsPrimitive || t == _string)
                     using (var reader = new StreamReader(stream, underlyingRequest.ContentEncoding))
                     {
                         if (t == _int)

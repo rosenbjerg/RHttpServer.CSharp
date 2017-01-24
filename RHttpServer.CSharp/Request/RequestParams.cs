@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace RHttpServer.Request
+namespace RHttpServer
 {
     /// <summary>
     ///     Object containing the parameters for a request
@@ -10,6 +10,10 @@ namespace RHttpServer.Request
         internal RequestParams(Dictionary<string, string> dict)
         {
             _dict = dict;
+        }
+
+        internal RequestParams()
+        {
         }
 
         private readonly Dictionary<string, string> _dict;
@@ -23,10 +27,8 @@ namespace RHttpServer.Request
         {
             get
             {
-                if (_dict == null) return "";
-                var v = "";
-                _dict.TryGetValue(paramId, out v);
-                return v;
+                string v;
+                return _dict.TryGetValue(paramId, out v) ? v : "";
             }
         }
     }

@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using RHttpServer.Logging;
 
-namespace RHttpServer.Request
+namespace RHttpServer
 {
     /// <summary>
     ///     Ease-of-use wrapper for request cookies
@@ -12,6 +12,10 @@ namespace RHttpServer.Request
         internal RCookies(CookieCollection cocol)
         {
             _cookies = cocol;
+        }
+
+        internal RCookies()
+        {
         }
 
         private readonly CookieCollection _cookies;

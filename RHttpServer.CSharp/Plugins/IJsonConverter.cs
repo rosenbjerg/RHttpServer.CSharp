@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace RHttpServer.Plugins
+namespace RHttpServer
 {
     /// <summary>
     ///     Interface for classes used for Json serialization and deserialization

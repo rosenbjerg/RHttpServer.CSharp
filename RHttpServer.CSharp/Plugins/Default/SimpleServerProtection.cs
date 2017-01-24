@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RHttpServer.Logging;
 
-namespace RHttpServer.Plugins.Default
+namespace RHttpServer.Default
 {
     /// <summary>
     ///     The default security handler. Can protect against DOS attacks
@@ -33,7 +33,7 @@ namespace RHttpServer.Plugins.Default
         {
             while (_maintainerRunning)
             {
-                await Task.Delay(TimeSpan.FromSeconds(Settings.SessionLengthSeconds/2.0));
+                await Task.Delay(TimeSpan.FromSeconds(Settings.SessionLengthSeconds / 2.0));
                 var now = DateTime.UtcNow;
                 var olds =
                     _visitors.Where(
@@ -51,7 +51,7 @@ namespace RHttpServer.Plugins.Default
         {
             while (_maintainerRunning)
             {
-                await Task.Delay(TimeSpan.FromMinutes(Settings.BanTimeMinutes/2.0));
+                await Task.Delay(TimeSpan.FromMinutes(Settings.BanTimeMinutes / 2.0));
                 var now = DateTime.UtcNow;
                 var olds =
                     _visitors.Where(
@@ -67,8 +67,10 @@ namespace RHttpServer.Plugins.Default
 
         public bool HandleRequest(HttpListenerRequest req)
         {
-            var url = req.RemoteEndPoint?.Address.ToString();
-            if ((url == null) || (Settings == null)) return true;
+            var url = req.Headers["X-Real-IP"];
+            if (string.IsNullOrEmpty(url))
+                url = req.RemoteEndPoint?.Address.ToString();
+            if (url == null || Settings == null) return true;
             HttpRequester vis;
             if (_blacklist.ContainsKey(url)) return false;
 
@@ -78,7 +80,7 @@ namespace RHttpServer.Plugins.Default
                 _blacklist.TryAdd(url, 1);
                 _visitors.TryRemove(url, out vis);
 
-                Logger.Log("Security", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
+                Logger.Log("SEC", $"{url} has been blacklisted for {Settings.BanTimeMinutes} minutes");
                 return true;
             }
             _visitors.TryAdd(url, new HttpRequester());

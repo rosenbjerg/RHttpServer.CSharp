@@ -1,7 +1,7 @@
 using System.IO;
 using ServiceStack.Text;
 
-namespace RHttpServer.Plugins.Default
+namespace RHttpServer.Default
 {
     /// <summary>
     ///     Very simple JsonConverter plugin using ServiceStact.Text generic methods

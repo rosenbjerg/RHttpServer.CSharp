@@ -7,14 +7,15 @@ using RHttpServer.Logging;
 namespace RHttpServer
 {
     /// <summary>
-    ///     Http server where request are handled by a predetermined number of threads </br>
+    ///     Http server where request are handled by a predetermined number of threads
+    ///     <para />
     ///     Good for processing many small requests
     /// </summary>
     public sealed class ThreadBasedHttpServer : BaseHttpServer
     {
         /// <summary>
         /// </summary>
-        /// <param name="port"></param>
+        /// <param name="port">The port to listen on</param>
         /// <param name="requestHandlerThreads">The amount of threads to process requests with</param>
         /// <param name="path">Path to use as public dir. Set to null or empty string if none wanted</param>
         /// <param name="throwExceptions">Whether exceptions should be suppressed and logged, or thrown</param>
@@ -23,11 +24,11 @@ namespace RHttpServer
         {
             _workers = new Thread[requestHandlerThreads];
             _queue = new ConcurrentQueue<HttpListenerContext>();
-            _ready = new ManualResetEventSlim(false);
+            _readyEvent = new ManualResetEventSlim(false);
         }
 
         private readonly ConcurrentQueue<HttpListenerContext> _queue;
-        private readonly ManualResetEventSlim _ready;
+        private readonly ManualResetEventSlim _readyEvent;
         private readonly Thread[] _workers;
 
         protected override void OnStart()
@@ -48,12 +49,12 @@ namespace RHttpServer
         protected override void ProcessContext(HttpListenerContext context)
         {
             _queue.Enqueue(context);
-            _ready.Set();
+            _readyEvent.Set();
         }
 
         private void Worker()
         {
-            WaitHandle[] wait = {_ready.WaitHandle, _stop.WaitHandle};
+            WaitHandle[] wait = {_readyEvent.WaitHandle, StopEvent.WaitHandle};
 
             while (0 == WaitHandle.WaitAny(wait))
                 try
@@ -61,7 +62,7 @@ namespace RHttpServer
                     HttpListenerContext context;
                     if (!_queue.TryDequeue(out context))
                     {
-                        _ready.Reset();
+                        _readyEvent.Reset();
                         continue;
                     }
                     if (!SecurityOn || SecMan.HandleRequest(context.Request))

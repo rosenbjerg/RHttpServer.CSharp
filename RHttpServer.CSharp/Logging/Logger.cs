@@ -12,7 +12,7 @@ namespace RHttpServer.Logging
         private static LoggingOption _logOpt = LoggingOption.None;
         private static string _logFilePath;
         private static bool _stackTrace;
-        private static readonly object _fileLock = new object();
+        private static readonly object FileLock = new object();
 
         /// <summary>
         ///     Method used to configure the logger.
@@ -28,16 +28,10 @@ namespace RHttpServer.Logging
             _logFilePath = logFilePath;
             if (logOpt != LoggingOption.File) return;
             if (string.IsNullOrWhiteSpace(logFilePath))
-            {
-                Console.WriteLine("\nYou must give a filepath if choosing File" +
-                                  "\nLogging now turned off");
-                _logOpt = LoggingOption.None;
-            }
+                _logFilePath = "LOG.txt";
             else if ((Directory.Exists(logFilePath) || File.Exists(logFilePath)) &&
                      File.GetAttributes(logFilePath).HasFlag(FileAttributes.Directory))
-            {
                 _logFilePath = Path.Combine(_logFilePath, "LOG.txt");
-            }
         }
 
         /// <summary>
@@ -53,13 +47,13 @@ namespace RHttpServer.Logging
                     break;
                 case LoggingOption.Terminal:
                     Console.WriteLine(
-                        $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}");
+                        $"{DateTime.Now:g}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}\n" : "")}");
                     break;
                 case LoggingOption.File:
-                    lock (_fileLock)
+                    lock (FileLock)
                     {
                         File.AppendAllText(_logFilePath,
-                            $"{DateTime.Now.ToString("g")}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}" : "")}",
+                            $"{DateTime.Now:g}: {ex.GetType().Name} - {ex.Message}{(_stackTrace ? $"\n Stack trace:\n{ex.StackTrace}\n" : "")}",
                             Encoding.Default);
                     }
                     break;
@@ -78,12 +72,12 @@ namespace RHttpServer.Logging
                 case LoggingOption.None:
                     break;
                 case LoggingOption.Terminal:
-                    Console.WriteLine($"{DateTime.Now.ToString("g")}: {title} - {message}");
+                    Console.WriteLine($"{DateTime.Now:g}: {title} - {message}");
                     break;
                 case LoggingOption.File:
-                    lock (_fileLock)
+                    lock (FileLock)
                     {
-                        File.AppendAllText(_logFilePath, $"{DateTime.Now.ToString("g")}: {title} - {message}\n",
+                        File.AppendAllText(_logFilePath, $"{DateTime.Now:g}: {title} - {message}\n",
                             Encoding.Default);
                     }
                     break;
@@ -101,12 +95,12 @@ namespace RHttpServer.Logging
                 case LoggingOption.None:
                     break;
                 case LoggingOption.Terminal:
-                    Console.WriteLine($"{DateTime.Now.ToString("g")}: {message}");
+                    Console.WriteLine($"{DateTime.Now:g}: {message}");
                     break;
                 case LoggingOption.File:
-                    lock (_fileLock)
+                    lock (FileLock)
                     {
-                        File.AppendAllText(_logFilePath, $"{DateTime.Now.ToString("g")}: {message}\n",
+                        File.AppendAllText(_logFilePath, $"{DateTime.Now:g}: {message}\n",
                             Encoding.Default);
                     }
                     break;
