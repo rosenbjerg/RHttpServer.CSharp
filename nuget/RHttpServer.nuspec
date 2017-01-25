@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>RHttpServer</id>
-    <version>1.0.4.3</version>
+    <version>1.0.4.4</version>
     <title>RHS - RedHttpServer</title>
     <authors>Malte Rosenbjerg</authors>
     <owners>Rosenbjerg Softworks</owners>
@@ -19,7 +19,7 @@ The framework includes plugins for json and xml serialization/deserialization, r
 Furthermore a simple plugin for dynamic page rendering, which offers the ability to embed dynamically created content in the html file, even js objects and text, ecs or html files (and a couple more).
 See project page for more information.
 	</summary>
-    <releaseNotes>Websockets</releaseNotes>
+    <releaseNotes>Fixes</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>RHttpServer red rhs http server api rendering ecs</tags>
   <dependencies>

@@ -149,7 +149,7 @@ namespace RHttpServer
         /// <param name="contentType">The mime type of the content</param>
         /// <param name="gzipCompress">Whether the data should be compressed if client accepts gzip encoding</param>
         /// <param name="status">The status code for the response</param>
-        public async void SendString(string data, string contentType = "text/plain", bool gzipCompress = false,
+        public async void SendString(string data, string contentType = "text/plain", string filename = "", bool gzipCompress = false,
             int status = (int) HttpStatusCode.OK)
         {
             try
@@ -159,6 +159,8 @@ namespace RHttpServer
                 UnderlyingResponse.AddHeader(Xpb, XpBstring + BaseHttpServer.Version);
                 UnderlyingResponse.ContentType = contentType;
                 UnderlyingResponse.ContentLength64 = bytes.LongLength;
+                if (!string.IsNullOrEmpty(filename))
+                    UnderlyingResponse.AddHeader("Content-disposition", $"inline; filename=\"{filename}\"");
                 if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                     await InternalTransfer(bytes, UnderlyingResponse.OutputStream);
                 else
