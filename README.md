@@ -7,18 +7,6 @@ Some of the use patterns has been inspired by nodejs and expressjs
 ### Documentation
 Documentation can be found [here](http://rosenbjerg.dk/rhs/docs/)
 
-### RHttpServerBuilder (rhsb)
-I have created a simple tool that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
-
-The tool will automatically download all missing nuget dependencies, if a packages.config file is provided in the same folder as the source files
-
-rhsb can also be used to start the server in the background, and later-on, stop it again
-
-You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb/download)
-
-The tool requires the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) to be installed if using Linux or Mac OSX
-
-
 ### Example
 In this example, we listen locally on port 3000 and respond using 4 threads, without security on.
 
@@ -103,6 +91,16 @@ The format is inspired by the ejs format, though you cannot embed JavaScript or 
 
 Embed your dynamic content using RenderParams instead of embedding the code for generation of the content in the html.
 
+### RHttpServerBuilder (rhsb)
+I have created a simple tool that makes it easy to compile the server source files to an executable (sadly not C#6 yet).
+
+The tool will automatically download all missing nuget dependencies, if a packages.config file is provided in the same folder as the source files
+
+rhsb can also be used to start the server in the background, and later-on, stop it again
+
+You can download the build tool installer here: [RHSB-Installer](http://rosenbjerg.dk/rhs/rhsb/download)
+
+The tool requires the [Mono runtime](http://www.mono-project.com/docs/getting-started/install/) to be installed if using Linux or Mac OSX
 
 ## Why?
 Because i like C#, the .NET framework and type-safety, but i also like the use-patterns of nodejs, with expressjs especially.
