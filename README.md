@@ -8,12 +8,12 @@ Some of the use patterns has been inspired by nodejs and expressjs
 Documentation can be found [here](http://rosenbjerg.dk/rhs/docs/)
 
 ### Example
-In this example, we listen locally on port 3000 and respond using 4 threads, without security on.
+In this example, we listen locally on port 3000 and handles the responses as tasks.
 
-This example only handles GET http requests and the public folder is placed in the same folder as the server executable
+This example only handles GET http requests and the public folder is placed in the same folder as the server executable and named public.
 
 ```csharp
-var server = new RHttpServer.ThreadBasedHttpServer(3000, 4, "./public");
+var server = new TaskBasedHttpServer(3000, "./public");
 
 server.Get("/", (req, res) =>
 {
@@ -23,25 +23,33 @@ server.Get("/", (req, res) =>
 // Sends the file secret.html as response
 server.Get("/file", (req, res) =>
 {
-    res.SendFile("./notpublic/secret.html");
+    res.SendFile("./notpublic/somepage.html");
 });
 
+server.Get("/download", (req, res) =>
+{
+    res.Download("./notpublic/video.mp4");
+});
 
 server.Get("/:name", (req, res) =>
 {
-    var pars = new RenderParams();
-    pars.Add("data1", req.Params["name"]);
-    pars.Add("foo", "bar");
-    pars.Add("answer", 42);
+    var name = req.Params["name"];
+    
+    var pars = new RenderParams
+    {
+        {"nametag", name},
+        {"foo", "bar"},
+        {"answer", 42}
+    };
 
     res.RenderPage("./public/index.ecs", pars);
 });
 
 // Saves the body of post requests to the Uploads folder
 // and prepends the current date and time to the filename
-server.Post("/upload", (req, res) =>
+server.Post("/upload", async (req, res) =>
 {
-    req.SaveBodyToFile("./Uploads", fname => DateTime.Now + "-" + fname);
+    await req.SaveBodyToFile("./Uploads", fname => DateTime.Now + "-" + fname);
     res.SendString("saved");
 });
 
