@@ -45,6 +45,30 @@ server.Get("/:name", (req, res) =>
     res.RenderPage("./public/index.ecs", pars);
 });
 
+// Handle websocket requests
+// This example is a simple echo server that replies with what has been send
+server.WebSocket("/ws", (req, wsd) =>
+{
+    wsd.OnTextReceived += (sender, eventArgs) =>
+    {
+        wsd.SendText(eventArgs.Text);
+    };
+
+    wsd.OnBinaryReceived += (sender, eventArgs) =>
+    {
+        wsd.SendBinary(eventArgs.Data);
+    };
+    
+    wsd.OnClosed += (sender, eventArgs) =>
+    {
+        // Do stuff when websocket connection is closed
+    };
+    
+    // Start listening for messages after handlers are set
+    wsd.Ready();
+});
+
+
 // Saves the body of post requests to the Uploads folder
 // and prepends the current date and time to the filename
 server.Post("/upload", async (req, res) =>
