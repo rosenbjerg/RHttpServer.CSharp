@@ -431,8 +431,7 @@ namespace RHttpServer
                     if (!gzipCompress || !UnderlyingResponse.Headers["Accept-Encoding"].Contains("gzip"))
                         await InternalTransfer(input, UnderlyingResponse.OutputStream, rangeStart, (int) len);
                     else
-                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true)
-                        )
+                        using (var zip = new GZipStream(UnderlyingResponse.OutputStream, CompressionMode.Compress, true))
                         {
                             await InternalTransfer(input, zip, rangeStart, (int) len);
                         }

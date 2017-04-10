@@ -132,7 +132,6 @@ namespace RHttpServer
             var files = new Dictionary<string, string>();
             var sizes = new Dictionary<string, long>();
             var failed = false;
-
             var parser = new StreamingMultipartFormDataParser(UnderlyingRequest.InputStream);
             parser.FileHandler += (name, fname, type, disposition, buffer, bytes) =>
             {

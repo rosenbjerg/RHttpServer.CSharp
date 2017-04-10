@@ -44,11 +44,11 @@ namespace RHttpServer
         private readonly RPluginCollection _rPluginCollection = new RPluginCollection();
         private readonly RouteTreeManager _rtman = new RouteTreeManager();
         protected readonly ManualResetEventSlim StopEvent;
+        protected IHttpSecurityHandler SecMan;
         private IFileCacheManager _cacheMan;
         private bool _defPluginsReady;
         private ResponseHandler _resHandler;
         private bool _securityOn;
-        protected IHttpSecurityHandler SecMan;
 
         /// <summary>
         ///     The publicly available folder
