@@ -1,4 +1,6 @@
 # RHttpServer.CSharp or rhs.cs
+## This repo is no longer maintained. All further development is at the cross-platform friendly version at https://github.com/rosenbjerg/RedHttpServer.CSharp
+
 
 A C# alternative to nodejs and similar server bundles
 
